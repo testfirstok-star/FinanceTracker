@@ -6,42 +6,46 @@ import DashboardPage from './pages/DashboardPage'
 import ExpensesPage from './pages/ExpensesPage'
 import IncomePage from './pages/IncomePage'
 import InvestmentsPage from './pages/InvestmentsPage'
+import { DashboardIcon, ExpensesIcon, IncomeIcon, InvestmentsIcon, LogIcon } from './components/icons'
+import BackupRestoreControls from './components/BackupRestoreControls'
 
 const navItems = [
-  { to: '/', label: 'Log', end: true },
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/expenses', label: 'Expenses' },
-  { to: '/income', label: 'Income' },
-  { to: '/investments', label: 'Investments' },
+  { to: '/', label: 'Log', end: true, icon: LogIcon },
+  { to: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+  { to: '/expenses', label: 'Expenses', icon: ExpensesIcon },
+  { to: '/income', label: 'Income', icon: IncomeIcon },
+  { to: '/investments', label: 'Investments', icon: InvestmentsIcon },
 ]
 
 function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 py-3">
-          <span className="mr-4 shrink-0 text-lg font-semibold text-slate-900 dark:text-white">💰 Finance Tracker</span>
-          <nav className="flex gap-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+      <header className="sticky top-0 z-10 border-b border-line bg-ink/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-[max(1rem,env(safe-area-inset-left))] py-3">
+          <span className="font-display shrink-0 text-lg font-semibold text-gold">💰 Finance Tracker</span>
+          <BackupRestoreControls />
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">{children}</main>
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+        <div className="mx-auto flex max-w-6xl px-[env(safe-area-inset-left)]">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-medium transition-colors ${
+                  isActive ? 'text-gold' : 'text-muted'
+                }`
+              }
+            >
+              <item.icon className="h-6 w-6" />
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }

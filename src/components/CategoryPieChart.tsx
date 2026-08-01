@@ -29,7 +29,7 @@ export default function CategoryPieChart({ data }: { data: Array<{ name: string;
   }, [data])
 
   if (total === 0) {
-    return <p className="py-8 text-center text-sm text-slate-400">No entries for this period.</p>
+    return <p className="py-8 text-center text-sm text-muted">No entries for this period.</p>
   }
 
   return (
@@ -62,7 +62,7 @@ export default function CategoryPieChart({ data }: { data: Array<{ name: string;
           />
         </PieChart>
       </ResponsiveContainer>
-      <p className="mt-1 text-center text-sm text-slate-400">Total {formatMoney(total)}</p>
+      <p className="mt-1 text-center text-sm text-muted">Total {formatMoney(total)}</p>
     </div>
   )
 }

@@ -8,11 +8,11 @@ import type { EntryType } from '../types'
 
 function StatTile({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'bad' }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
-      <div className="text-xs text-slate-400">{label}</div>
+    <div className="rounded-lg bg-panel-hover p-3">
+      <div className="text-xs text-muted">{label}</div>
       <div
         className={`text-lg font-semibold ${
-          tone === 'good' ? 'text-green-600 dark:text-green-400' : tone === 'bad' ? 'text-red-500' : 'text-slate-900 dark:text-white'
+          tone === 'good' ? 'text-accent-green' : tone === 'bad' ? 'text-accent-red' : 'text-text'
         }`}
       >
         {value}
@@ -63,11 +63,11 @@ export default function DashboardPage() {
         title="Monthly report"
         action={
           <div className="flex items-center gap-2">
-            <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="rounded-md px-2 py-1 text-sm hover:bg-slate-100 dark:hover:bg-slate-800">
+            <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="rounded-md px-2 py-1 text-sm hover:bg-panel-hover">
               ←
             </button>
             <span className="min-w-32 text-center text-sm font-medium">{formatMonthLabel(month)}</span>
-            <button onClick={() => setMonth((m) => shiftMonth(m, 1))} className="rounded-md px-2 py-1 text-sm hover:bg-slate-100 dark:hover:bg-slate-800">
+            <button onClick={() => setMonth((m) => shiftMonth(m, 1))} className="rounded-md px-2 py-1 text-sm hover:bg-panel-hover">
               →
             </button>
           </div>
@@ -82,13 +82,13 @@ export default function DashboardPage() {
         <div className="mb-2 flex gap-1">
           <button
             onClick={() => setPieType('expense')}
-            className={`rounded-md px-2 py-1 text-xs font-medium ${pieType === 'expense' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}
+            className={`rounded-md px-2 py-1 text-xs font-medium ${pieType === 'expense' ? 'bg-gold text-ink' : 'bg-panel-hover'}`}
           >
             Expense categories
           </button>
           <button
             onClick={() => setPieType('income')}
-            className={`rounded-md px-2 py-1 text-xs font-medium ${pieType === 'income' ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}
+            className={`rounded-md px-2 py-1 text-xs font-medium ${pieType === 'income' ? 'bg-gold text-ink' : 'bg-panel-hover'}`}
           >
             Income categories
           </button>
@@ -99,18 +99,18 @@ export default function DashboardPage() {
       <Card title="Expenses">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
-            <p className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">Daily spend</p>
+            <p className="mb-2 text-sm font-medium text-muted">Daily spend</p>
             <MonthCalendar monthKeyStr={month} totalsByDay={totalsByDay(expenseTx)} hue="blue" />
           </div>
           <div>
-            <p className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">📊 Monthly stats</p>
+            <p className="mb-2 text-sm font-medium text-muted">📊 Monthly stats</p>
             <CategoryPieChart data={breakdown(expenseTx)} />
           </div>
         </div>
       </Card>
 
       <Card title="Income">
-        <p className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">Daily income</p>
+        <p className="mb-2 text-sm font-medium text-muted">Daily income</p>
         <MonthCalendar monthKeyStr={month} totalsByDay={totalsByDay(incomeTx)} hue="green" />
       </Card>
 
@@ -121,7 +121,7 @@ export default function DashboardPage() {
           <StatTile label="Expenses" value={formatMoney(investmentTotals.expenses)} tone="bad" />
           <StatTile label="Total net" value={formatMoney(investmentTotals.net)} />
         </div>
-        {data.investmentAccounts.length === 0 && <p className="text-sm text-slate-400">No investments logged yet.</p>}
+        {data.investmentAccounts.length === 0 && <p className="text-sm text-muted">No investments logged yet.</p>}
       </Card>
     </div>
   )

@@ -14,6 +14,7 @@ import { loadData, newId, saveData } from '../storage/db'
 
 interface DataContextValue {
   data: AppData
+  replaceData: (next: AppData) => void
 
   // categories
   addCategory: (name: string, type: EntryType) => Category
@@ -61,6 +62,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<DataContextValue>(() => {
     return {
       data,
+      replaceData: (next) => {
+        setData({
+          categories: next.categories ?? [],
+          keywords: next.keywords ?? [],
+          fixedItems: next.fixedItems ?? [],
+          transactions: next.transactions ?? [],
+          investmentAccounts: next.investmentAccounts ?? [],
+          investmentTransactions: next.investmentTransactions ?? [],
+        })
+      },
 
       addCategory: (name, type) => {
         const cat: Category = { id: newId(), name: name.trim(), type }

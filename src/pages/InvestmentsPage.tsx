@@ -22,7 +22,7 @@ export default function InvestmentsPage() {
         title="Investments"
         action={
           !adding && (
-            <button onClick={() => setAdding(true)} className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+            <button onClick={() => setAdding(true)} className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
               + New investment
             </button>
           )
@@ -35,12 +35,12 @@ export default function InvestmentsPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Brokerage - Fidelity"
-              className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="flex-1 rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
             />
-            <button type="submit" className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+            <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
               Create
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="text-sm text-slate-400 hover:text-red-500">
+            <button type="button" onClick={() => setAdding(false)} className="text-sm text-muted hover:text-accent-red">
               Cancel
             </button>
           </form>
@@ -51,7 +51,7 @@ export default function InvestmentsPage() {
             <InvestmentAccountSection key={acc.id} account={acc} />
           ))}
           {data.investmentAccounts.length === 0 && (
-            <p className="text-sm text-slate-400">No investments yet — click "+ New investment" to add one.</p>
+            <p className="text-sm text-muted">No investments yet — click "+ New investment" to add one.</p>
           )}
         </div>
       </Card>

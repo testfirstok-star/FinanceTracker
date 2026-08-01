@@ -82,15 +82,15 @@ export default function ChatLogger() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder='Try "lunch 12" or "salary 3000"'
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="flex-1 rounded-md border border-line px-3 py-2 text-sm bg-panel-hover"
         />
-        <button type="submit" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        <button type="submit" className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-dark">
           Send
         </button>
       </form>
 
       {pending && (
-        <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950">
+        <div className="mt-3 rounded-md border border-gold/40 bg-gold/10 p-3 text-sm">
           <p className="mb-2">
             Couldn't auto-categorize "<strong>{pending.description}</strong>" ({formatMoney(pending.amount)}). Pick a type &amp; category:
           </p>
@@ -101,7 +101,7 @@ export default function ChatLogger() {
                 setPendingType(e.target.value as EntryType)
                 setPendingCategoryId('')
               }}
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
             >
               <option value="expense">Expense</option>
               <option value="income">Income</option>
@@ -109,7 +109,7 @@ export default function ChatLogger() {
             <select
               value={pendingCategoryId}
               onChange={(e) => setPendingCategoryId(e.target.value)}
-              className="rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+              className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
             >
               <option value="">Category…</option>
               {categories.map((c) => (
@@ -118,18 +118,18 @@ export default function ChatLogger() {
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <label className="flex items-center gap-1 text-xs text-muted">
               <input type="checkbox" checked={rememberKeyword} onChange={(e) => setRememberKeyword(e.target.checked)} />
               remember this keyword
             </label>
             <button
               onClick={confirmPending}
               disabled={!pendingCategoryId}
-              className="rounded-md bg-indigo-600 px-3 py-1 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+              className="rounded-md bg-gold px-3 py-1 text-sm font-medium text-ink hover:bg-gold-dark disabled:opacity-40"
             >
               Confirm
             </button>
-            <button onClick={() => setPending(null)} className="text-sm text-slate-400 hover:text-red-500">
+            <button onClick={() => setPending(null)} className="text-sm text-muted hover:text-accent-red">
               Cancel
             </button>
           </div>
@@ -139,8 +139,8 @@ export default function ChatLogger() {
       <div className="mt-4 space-y-2">
         {recentFeed.map((item) => (
           <div key={item.id} className="text-sm">
-            <div className="inline-block rounded-lg bg-slate-100 px-3 py-1.5 dark:bg-slate-800">{item.text}</div>
-            <div className={`ml-2 mt-1 text-xs ${item.isError ? 'text-red-500' : 'text-slate-400'}`}>{item.result}</div>
+            <div className="inline-block rounded-lg bg-panel-hover px-3 py-1.5">{item.text}</div>
+            <div className={`ml-2 mt-1 text-xs ${item.isError ? 'text-accent-red' : 'text-muted'}`}>{item.result}</div>
           </div>
         ))}
       </div>

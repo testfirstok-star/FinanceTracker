@@ -25,9 +25,9 @@ export default function CategoryManager({ type }: { type: EntryType }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="New category name"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800"
+          className="flex-1 rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
         />
-        <button type="submit" className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+        <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
           Add
         </button>
       </form>
@@ -38,8 +38,8 @@ export default function CategoryManager({ type }: { type: EntryType }) {
             key={c.id}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
               c.archived
-                ? 'border-slate-200 text-slate-400 dark:border-slate-700'
-                : 'border-slate-300 text-slate-700 dark:border-slate-700 dark:text-slate-200'
+                ? 'border-line text-muted'
+                : 'border-line text-text2 text-text2'
             }`}
           >
             {editingId === c.id ? (
@@ -57,7 +57,7 @@ export default function CategoryManager({ type }: { type: EntryType }) {
                     setEditingId(null)
                   }
                 }}
-                className="w-24 border-b border-indigo-400 bg-transparent text-sm outline-none"
+                className="w-24 border-b border-gold bg-transparent text-sm outline-none"
               />
             ) : (
               <span
@@ -72,20 +72,20 @@ export default function CategoryManager({ type }: { type: EntryType }) {
               </span>
             )}
             {c.archived ? (
-              <button onClick={() => restoreCategory(c.id)} className="text-indigo-500 hover:text-indigo-700" title="Restore">
+              <button onClick={() => restoreCategory(c.id)} className="text-gold hover:text-gold-dark" title="Restore">
                 ↺
               </button>
             ) : (
-              <button onClick={() => archiveCategory(c.id)} className="text-slate-400 hover:text-red-500" title="Remove">
+              <button onClick={() => archiveCategory(c.id)} className="text-muted hover:text-accent-red" title="Remove">
                 ✕
               </button>
             )}
           </div>
         ))}
-        {categories.length === 0 && <p className="text-sm text-slate-400">No categories yet.</p>}
+        {categories.length === 0 && <p className="text-sm text-muted">No categories yet.</p>}
       </div>
 
-      <button onClick={() => setShowArchived((s) => !s)} className="mt-3 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+      <button onClick={() => setShowArchived((s) => !s)} className="mt-3 text-xs text-muted hover:text-text2">
         {showArchived ? 'Hide removed categories' : 'Show removed categories'}
       </button>
     </div>

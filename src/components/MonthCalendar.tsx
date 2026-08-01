@@ -24,7 +24,7 @@ export default function MonthCalendar({ monthKeyStr, totalsByDay, hue }: Props) 
 
   return (
     <div className="calendar-surface">
-      <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs text-slate-400">
+      <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs text-muted">
         {WEEKDAYS.map((w) => (
           <div key={w}>{w}</div>
         ))}
@@ -41,11 +41,11 @@ export default function MonthCalendar({ monthKeyStr, totalsByDay, hue }: Props) 
               key={cell.date}
               title={`${cell.date}: ${formatMoney(amount)}`}
               style={{ background: bg }}
-              className="flex aspect-square flex-col items-center justify-center rounded-md border border-slate-100 text-xs dark:border-slate-800"
+              className="flex aspect-square flex-col items-center justify-center rounded-md border border-line text-xs"
             >
-              <span className={textDark ? 'text-white' : 'text-slate-500 dark:text-slate-400'}>{cell.day}</span>
+              <span className={textDark ? 'text-white' : 'text-muted'}>{cell.day}</span>
               {amount > 0 && (
-                <span className={`text-[10px] font-medium ${textDark ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
+                <span className={`text-[10px] font-medium ${textDark ? 'text-white' : 'text-text2'}`}>
                   {Math.round(amount)}
                 </span>
               )}

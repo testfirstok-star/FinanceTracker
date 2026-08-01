@@ -1,51 +1,65 @@
 @import "tailwindcss";
 
+@theme {
+  --color-ink: #0b0d10;
+  --color-panel: #14171b;
+  --color-panel-hover: #1b1f24;
+  --color-line: #23272c;
+  --color-text: #e8e6e1;
+  --color-text2: #d8d5cc;
+  --color-muted: #8a8578;
+  --color-faint: #5c6068;
+  --color-gold: #c9a961;
+  --color-gold-dark: #b0904f;
+  --color-accent-blue: #6fa8c9;
+  --color-accent-green: #7fb069;
+  --color-accent-red: #c1554d;
+  --font-serif: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
 :root {
-  color-scheme: light dark;
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
-  --series-5: #e87ba4;
-  --series-6: #008300;
-  --series-7: #4a3aa7;
-  --series-8: #e34948;
-  --series-other: #c3c2b7;
-  --chart-text: #52514e;
-  --chart-grid: #e1e0d9;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
-    --series-5: #d55181;
-    --series-6: #008300;
-    --series-7: #9085e9;
-    --series-8: #e66767;
-    --series-other: #383835;
-    --chart-text: #c3c2b7;
-    --chart-grid: #2c2c2a;
-  }
-}
-
-.calendar-surface {
-  --calendar-surface: #ffffff;
-}
-@media (prefers-color-scheme: dark) {
-  .calendar-surface {
-    --calendar-surface: #0f172a;
-  }
+  color-scheme: dark;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #4fbf9f;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --series-other: #3a3d33;
+  --chart-text: #8a8578;
+  --chart-grid: #23272c;
+  --calendar-surface: #14171b;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  font-family: var(--font-sans);
+  @apply bg-ink text-text;
 }
 
 #root {
   min-height: 100svh;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-serif);
+}
+
+.font-figure {
+  font-family: var(--font-mono);
+}
+
+/* iOS Safari auto-zooms the viewport when focusing an input/select with a computed
+   font-size below 16px — force 16px on touch-width viewports so tapping a field to
+   log an expense doesn't jolt the page in and out of zoom. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
