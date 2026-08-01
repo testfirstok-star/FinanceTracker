@@ -38,7 +38,7 @@ export default function TransactionTable({ type }: { type: EntryType }) {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
+            className="rounded-md border border-line px-2 py-1 text-xs bg-panel-hover"
           >
             <option value="all">All categories</option>
             {categoryNames.map((name) => (
@@ -53,7 +53,7 @@ export default function TransactionTable({ type }: { type: EntryType }) {
               setMonthFilter(e.target.value)
               setDayFilter('')
             }}
-            className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
+            className="rounded-md border border-line px-2 py-1 text-xs bg-panel-hover"
           >
             <option value="all">All months</option>
             {monthOptions.map((m) => (
@@ -66,7 +66,7 @@ export default function TransactionTable({ type }: { type: EntryType }) {
             type="date"
             value={dayFilter}
             onChange={(e) => setDayFilter(e.target.value)}
-            className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
+            className="rounded-md border border-line px-2 py-1 text-xs bg-panel-hover"
           />
           {dayFilter && (
             <button onClick={() => setDayFilter('')} className="text-xs text-muted hover:text-accent-red">
@@ -74,13 +74,13 @@ export default function TransactionTable({ type }: { type: EntryType }) {
             </button>
           )}
         </div>
-        <span className="text-sm font-medium text-text2">
+        <span className="text-xs font-medium text-text2">
           {filtered.length} entries · {formatMoney(total)}
         </span>
       </div>
 
       <div className="max-h-96 overflow-auto rounded-md border border-line">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-xs">
           <thead className="sticky top-0 bg-panel-hover">
             <tr>
               <th className="px-3 py-2 font-medium">Date</th>

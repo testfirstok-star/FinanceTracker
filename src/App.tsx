@@ -22,7 +22,10 @@ function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-line bg-ink/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-[max(1rem,env(safe-area-inset-left))] py-3">
-          <span className="font-display shrink-0 text-lg font-semibold text-gold">💰 Finance Tracker</span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+            <span className="section-label">Finance Tracker</span>
+          </span>
           <BackupRestoreControls />
         </div>
       </header>

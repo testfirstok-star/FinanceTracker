@@ -14,17 +14,13 @@ export default function Collapsible({
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="rounded-lg border border-line">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
-      >
-        <span className="flex items-center gap-2 font-medium text-text">
-          <span className={`inline-block transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="section-label flex flex-1 items-center gap-2 text-left">
+          <span className={`inline-block shrink-0 normal-case transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
           {title}
-        </span>
+        </button>
         {right}
-      </button>
+      </div>
       {open && <div className="border-t border-line px-4 py-3">{children}</div>}
     </div>
   )

@@ -3,15 +3,16 @@ import { useData } from '../hooks/DataContext'
 import Card from '../components/Card'
 import CategoryPieChart from '../components/CategoryPieChart'
 import MonthCalendar from '../components/MonthCalendar'
+import PageTitle from '../components/PageTitle'
 import { formatMoney, formatMonthLabel, monthKey, shiftMonth, todayStr } from '../lib/format'
-import type { EntryType } from '../types'
+import type { EntryType, Transaction } from '../types'
 
 function StatTile({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'bad' }) {
   return (
     <div className="rounded-lg bg-panel-hover p-3">
       <div className="text-xs text-muted">{label}</div>
       <div
-        className={`text-lg font-semibold ${
+        className={`font-figure text-lg font-semibold ${
           tone === 'good' ? 'text-accent-green' : tone === 'bad' ? 'text-accent-red' : 'text-text'
         }`}
       >
@@ -21,10 +22,32 @@ function StatTile({ label, value, tone }: { label: string; value: string; tone?:
   )
 }
 
+function DayLog({ date, transactions }: { date: string; transactions: Transaction[] }) {
+  return (
+    <div className="mt-4 rounded-lg border border-line">
+      <div className="section-label border-b border-line px-3 py-2">{date}</div>
+      <div className="divide-y divide-line">
+        {transactions.map((t) => (
+          <div key={t.id} className="flex items-center justify-between px-3 py-2 text-sm">
+            <div>
+              <div className="text-text">{t.description}</div>
+              <div className="text-xs text-muted">{t.categoryName}</div>
+            </div>
+            <div className="font-figure font-medium">{formatMoney(t.amount)}</div>
+          </div>
+        ))}
+        {transactions.length === 0 && <div className="px-3 py-4 text-center text-sm text-muted">No entries for this day.</div>}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const { data } = useData()
   const [month, setMonth] = useState(monthKey(todayStr()))
   const [pieType, setPieType] = useState<EntryType>('expense')
+  const [selectedExpenseDay, setSelectedExpenseDay] = useState<string | null>(null)
+  const [selectedIncomeDay, setSelectedIncomeDay] = useState<string | null>(null)
 
   const monthTx = useMemo(() => data.transactions.filter((t) => monthKey(t.date) === month), [data.transactions, month])
   const expenseTx = monthTx.filter((t) => t.type === 'expense')
@@ -44,35 +67,21 @@ export default function DashboardPage() {
     return map
   }
 
-  const investmentTotals = useMemo(() => {
-    let invested = 0
-    let income = 0
-    let expenses = 0
-    for (const t of data.investmentTransactions) {
-      if (t.type === 'deposit') invested += t.amount
-      else if (t.type === 'withdrawal') invested -= t.amount
-      else if (t.type === 'investment_income') income += t.amount
-      else if (t.type === 'investment_expense') expenses += t.amount
-    }
-    return { invested, income, expenses, net: invested + income - expenses }
-  }, [data.investmentTransactions])
-
   return (
     <div className="space-y-6">
-      <Card
-        title="Monthly report"
-        action={
-          <div className="flex items-center gap-2">
-            <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="rounded-md px-2 py-1 text-sm hover:bg-panel-hover">
-              ←
-            </button>
-            <span className="min-w-32 text-center text-sm font-medium">{formatMonthLabel(month)}</span>
-            <button onClick={() => setMonth((m) => shiftMonth(m, 1))} className="rounded-md px-2 py-1 text-sm hover:bg-panel-hover">
-              →
-            </button>
-          </div>
-        }
-      >
+      <PageTitle>Dashboard</PageTitle>
+
+      <div className="flex items-center justify-center gap-4">
+        <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="rounded-md px-2 py-1 text-xl text-muted hover:text-text">
+          ‹
+        </button>
+        <span className="min-w-40 text-center text-base font-medium text-text">{formatMonthLabel(month)}</span>
+        <button onClick={() => setMonth((m) => shiftMonth(m, 1))} className="rounded-md px-2 py-1 text-xl text-muted hover:text-text">
+          ›
+        </button>
+      </div>
+
+      <Card title="Monthly report">
         <div className="mb-4 grid grid-cols-3 gap-2">
           <StatTile label="Income" value={formatMoney(totalIncome)} tone="good" />
           <StatTile label="Expenses" value={formatMoney(totalExpense)} tone="bad" />
@@ -97,31 +106,26 @@ export default function DashboardPage() {
       </Card>
 
       <Card title="Expenses">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div>
-            <p className="mb-2 text-sm font-medium text-muted">Daily spend</p>
-            <MonthCalendar monthKeyStr={month} totalsByDay={totalsByDay(expenseTx)} hue="blue" />
-          </div>
-          <div>
-            <p className="mb-2 text-sm font-medium text-muted">📊 Monthly stats</p>
-            <CategoryPieChart data={breakdown(expenseTx)} />
-          </div>
-        </div>
+        <MonthCalendar
+          monthKeyStr={month}
+          totalsByDay={totalsByDay(expenseTx)}
+          limits={{ weekday: data.settings.weekdayExpenseLimit, weekend: data.settings.weekendExpenseLimit }}
+          selectedDate={selectedExpenseDay}
+          onDayClick={(date) => setSelectedExpenseDay((d) => (d === date ? null : date))}
+        />
+        {selectedExpenseDay && (
+          <DayLog date={selectedExpenseDay} transactions={expenseTx.filter((t) => t.date === selectedExpenseDay)} />
+        )}
       </Card>
 
       <Card title="Income">
-        <p className="mb-2 text-sm font-medium text-muted">Daily income</p>
-        <MonthCalendar monthKeyStr={month} totalsByDay={totalsByDay(incomeTx)} hue="green" />
-      </Card>
-
-      <Card title="Investments">
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatTile label="Invested" value={formatMoney(investmentTotals.invested)} />
-          <StatTile label="Earnings" value={formatMoney(investmentTotals.income)} tone="good" />
-          <StatTile label="Expenses" value={formatMoney(investmentTotals.expenses)} tone="bad" />
-          <StatTile label="Total net" value={formatMoney(investmentTotals.net)} />
-        </div>
-        {data.investmentAccounts.length === 0 && <p className="text-sm text-muted">No investments logged yet.</p>}
+        <MonthCalendar
+          monthKeyStr={month}
+          totalsByDay={totalsByDay(incomeTx)}
+          selectedDate={selectedIncomeDay}
+          onDayClick={(date) => setSelectedIncomeDay((d) => (d === date ? null : date))}
+        />
+        {selectedIncomeDay && <DayLog date={selectedIncomeDay} transactions={incomeTx.filter((t) => t.date === selectedIncomeDay)} />}
       </Card>
     </div>
   )

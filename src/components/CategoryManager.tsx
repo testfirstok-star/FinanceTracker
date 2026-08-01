@@ -25,9 +25,9 @@ export default function CategoryManager({ type }: { type: EntryType }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="New category name"
-          className="flex-1 rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
+          className="flex-1 rounded-md border border-line px-3 py-1.5 text-xs bg-panel-hover"
         />
-        <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
+        <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-xs font-medium text-ink hover:bg-gold-dark">
           Add
         </button>
       </form>
@@ -36,7 +36,7 @@ export default function CategoryManager({ type }: { type: EntryType }) {
         {categories.map((c) => (
           <div
             key={c.id}
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs ${
               c.archived
                 ? 'border-line text-muted'
                 : 'border-line text-text2 text-text2'
@@ -57,7 +57,7 @@ export default function CategoryManager({ type }: { type: EntryType }) {
                     setEditingId(null)
                   }
                 }}
-                className="w-24 border-b border-gold bg-transparent text-sm outline-none"
+                className="w-24 border-b border-gold bg-transparent text-xs outline-none"
               />
             ) : (
               <span
@@ -82,7 +82,7 @@ export default function CategoryManager({ type }: { type: EntryType }) {
             )}
           </div>
         ))}
-        {categories.length === 0 && <p className="text-sm text-muted">No categories yet.</p>}
+        {categories.length === 0 && <p className="text-xs text-muted">No categories yet.</p>}
       </div>
 
       <button onClick={() => setShowArchived((s) => !s)} className="mt-3 text-xs text-muted hover:text-text2">

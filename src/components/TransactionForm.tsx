@@ -39,13 +39,13 @@ export default function TransactionForm({ type }: { type: EntryType }) {
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
-        className="rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
+        className="rounded-md border border-line px-3 py-1.5 text-xs bg-panel-hover"
       />
       <input
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description"
-        className="rounded-md border border-line px-3 py-1.5 text-sm sm:col-span-2 bg-panel-hover"
+        className="rounded-md border border-line px-3 py-1.5 text-xs sm:col-span-2 bg-panel-hover"
       />
 
       {newCategoryMode ? (
@@ -55,7 +55,7 @@ export default function TransactionForm({ type }: { type: EntryType }) {
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder="New category"
-            className="w-full rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
+            className="w-full rounded-md border border-line px-3 py-1.5 text-xs bg-panel-hover"
           />
           <button type="button" onClick={() => setNewCategoryMode(false)} className="text-muted hover:text-accent-red">
             ✕
@@ -72,7 +72,7 @@ export default function TransactionForm({ type }: { type: EntryType }) {
               setCategoryId(e.target.value)
             }
           }}
-          className="rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
+          className="rounded-md border border-line px-3 py-1.5 text-xs bg-panel-hover"
         >
           <option value="">Category…</option>
           {categories.map((c) => (
@@ -92,9 +92,9 @@ export default function TransactionForm({ type }: { type: EntryType }) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount"
-          className="w-full rounded-md border border-line px-3 py-1.5 text-sm bg-panel-hover"
+          className="w-full rounded-md border border-line px-3 py-1.5 text-xs bg-panel-hover"
         />
-        <button type="submit" className="shrink-0 rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
+        <button type="submit" className="shrink-0 rounded-md bg-gold px-3 py-1.5 text-xs font-medium text-ink hover:bg-gold-dark">
           Log
         </button>
       </div>

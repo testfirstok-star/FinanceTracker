@@ -21,15 +21,16 @@
 
 :root {
   color-scheme: dark;
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --series-4: #c98500;
-  --series-5: #d55181;
-  --series-6: #4fbf9f;
-  --series-7: #9085e9;
-  --series-8: #e66767;
-  --series-other: #3a3d33;
+  /* Validated (dataviz skill) against dark surface #14171b — all 6 checks pass. */
+  --series-1: #5b93d6;
+  --series-2: #d3703f;
+  --series-3: #3fa378;
+  --series-4: #b8862e;
+  --series-5: #cc6690;
+  --series-6: #6e5fd1;
+  --series-7: #1c9b9b;
+  --series-8: #d15c5c;
+  --series-other: #4a4d45;
   --chart-text: #8a8578;
   --chart-grid: #23272c;
   --calendar-surface: #14171b;
@@ -45,12 +46,35 @@ body {
   min-height: 100svh;
 }
 
-h1, h2, h3, .font-display {
+.font-display {
   font-family: var(--font-serif);
 }
 
 .font-figure {
   font-family: var(--font-mono);
+}
+
+select,
+input,
+textarea,
+button {
+  font-family: inherit;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-muted);
+}
+
+.section-label-gold {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-gold);
 }
 
 /* iOS Safari auto-zooms the viewport when focusing an input/select with a computed

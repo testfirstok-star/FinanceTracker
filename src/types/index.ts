@@ -39,6 +39,8 @@ export interface InvestmentAccount {
   id: string
   name: string
   createdAt: number
+  /** User-entered current market value of the whole portfolio; drives auto gain/loss vs invested. */
+  currentValue?: number
 }
 
 export interface InvestmentTransaction {
@@ -52,6 +54,11 @@ export interface InvestmentTransaction {
   createdAt: number
 }
 
+export interface AppSettings {
+  weekdayExpenseLimit?: number
+  weekendExpenseLimit?: number
+}
+
 export interface AppData {
   categories: Category[]
   keywords: Keyword[]
@@ -59,4 +66,5 @@ export interface AppData {
   transactions: Transaction[]
   investmentAccounts: InvestmentAccount[]
   investmentTransactions: InvestmentTransaction[]
+  settings: AppSettings
 }

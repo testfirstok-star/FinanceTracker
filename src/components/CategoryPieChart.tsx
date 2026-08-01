@@ -34,7 +34,7 @@ export default function CategoryPieChart({ data }: { data: Array<{ name: string;
 
   return (
     <div>
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={180}>
         <PieChart>
           <Pie
             data={slices}
@@ -42,23 +42,23 @@ export default function CategoryPieChart({ data }: { data: Array<{ name: string;
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={55}
-            outerRadius={90}
+            innerRadius={38}
+            outerRadius={64}
             paddingAngle={2}
-            cornerRadius={4}
-            label={({ percent }) => (percent && percent > 0.08 ? `${Math.round(percent * 100)}%` : '')}
+            cornerRadius={3}
+            label={({ percent }) => (percent && percent > 0.1 ? `${Math.round(percent * 100)}%` : '')}
             labelLine={false}
           >
             {slices.map((s, i) => (
               <Cell key={s.name} fill={s.name === 'Other' ? OTHER_COLOR : SLOT_COLORS[i % SLOT_COLORS.length]} stroke="var(--chart-grid)" strokeWidth={2} />
             ))}
           </Pie>
-          <Tooltip formatter={(value) => formatMoney(Number(value))} contentStyle={{ fontSize: 13 }} />
+          <Tooltip formatter={(value) => formatMoney(Number(value))} contentStyle={{ fontSize: 12 }} />
           <Legend
             layout="vertical"
             verticalAlign="middle"
             align="right"
-            wrapperStyle={{ fontSize: 13, color: 'var(--chart-text)' }}
+            wrapperStyle={{ fontSize: 12, color: 'var(--chart-text)' }}
           />
         </PieChart>
       </ResponsiveContainer>

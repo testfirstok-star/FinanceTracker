@@ -76,6 +76,7 @@ function defaultData(): AppData {
     transactions: [],
     investmentAccounts: [],
     investmentTransactions: [],
+    settings: {},
   }
 }
 
@@ -91,6 +92,7 @@ export function loadData(): AppData {
       transactions: parsed.transactions ?? [],
       investmentAccounts: parsed.investmentAccounts ?? [],
       investmentTransactions: parsed.investmentTransactions ?? [],
+      settings: parsed.settings ?? {},
     }
   } catch {
     return defaultData()

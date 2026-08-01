@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
   AppData,
+  AppSettings,
   Category,
   EntryType,
   FixedItem,
@@ -15,6 +16,7 @@ import { loadData, newId, saveData } from '../storage/db'
 interface DataContextValue {
   data: AppData
   replaceData: (next: AppData) => void
+  updateSettings: (patch: Partial<AppSettings>) => void
 
   // categories
   addCategory: (name: string, type: EntryType) => Category
@@ -41,6 +43,7 @@ interface DataContextValue {
   // investments
   addInvestmentAccount: (name: string) => InvestmentAccount
   removeInvestmentAccount: (id: string) => void
+  updateInvestmentAccountValue: (id: string, currentValue: number | undefined) => void
   addInvestmentTransaction: (input: { accountId: string; description: string; category: string; amount: number; type: InvestmentEntryType; date?: string }) => void
   updateInvestmentTransaction: (id: string, patch: Partial<Pick<InvestmentTransaction, 'date' | 'description' | 'category' | 'amount' | 'type'>>) => void
   removeInvestmentTransaction: (id: string) => void
@@ -70,7 +73,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           transactions: next.transactions ?? [],
           investmentAccounts: next.investmentAccounts ?? [],
           investmentTransactions: next.investmentTransactions ?? [],
+          settings: next.settings ?? {},
         })
+      },
+      updateSettings: (patch) => {
+        setData((d) => ({ ...d, settings: { ...d.settings, ...patch } }))
       },
 
       addCategory: (name, type) => {
@@ -161,6 +168,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...d,
           investmentAccounts: d.investmentAccounts.filter((a) => a.id !== id),
           investmentTransactions: d.investmentTransactions.filter((t) => t.accountId !== id),
+        }))
+      },
+      updateInvestmentAccountValue: (id, currentValue) => {
+        setData((d) => ({
+          ...d,
+          investmentAccounts: d.investmentAccounts.map((a) => (a.id === id ? { ...a, currentValue } : a)),
         }))
       },
       addInvestmentTransaction: (input) => {
