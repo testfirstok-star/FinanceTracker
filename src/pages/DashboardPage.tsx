@@ -5,6 +5,7 @@ import CategoryPieChart from '../components/CategoryPieChart'
 import Collapsible from '../components/Collapsible'
 import MonthCalendar from '../components/MonthCalendar'
 import PageTitle from '../components/PageTitle'
+import UpcomingEntries from '../components/UpcomingEntries'
 import { formatMoney, formatMonthLabel, monthKey, shiftMonth, todayStr } from '../lib/format'
 import type { EntryType, Transaction } from '../types'
 
@@ -34,7 +35,7 @@ function DayLog({ date, transactions }: { date: string; transactions: Transactio
               <div className="text-text">{t.description}</div>
               <div className="text-xs text-muted">{t.categoryName}</div>
             </div>
-            <div className="font-figure font-medium">{formatMoney(t.amount)}</div>
+            <div className="font-medium">{formatMoney(t.amount)}</div>
           </div>
         ))}
         {transactions.length === 0 && <div className="px-3 py-4 text-center text-sm text-muted">No entries for this day.</div>}
@@ -129,6 +130,7 @@ export default function DashboardPage() {
         {selectedExpenseDay && (
           <DayLog date={selectedExpenseDay} transactions={expenseTx.filter((t) => t.date === selectedExpenseDay)} />
         )}
+        <UpcomingEntries type="expense" />
       </Card>
 
       <Card title="Income">
@@ -139,6 +141,7 @@ export default function DashboardPage() {
           onDayClick={(date) => setSelectedIncomeDay((d) => (d === date ? null : date))}
         />
         {selectedIncomeDay && <DayLog date={selectedIncomeDay} transactions={incomeTx.filter((t) => t.date === selectedIncomeDay)} />}
+        <UpcomingEntries type="income" />
       </Card>
 
       <Card>

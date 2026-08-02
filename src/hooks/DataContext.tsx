@@ -12,6 +12,7 @@ import type {
   Transaction,
 } from '../types'
 import { loadData, newId, saveData } from '../storage/db'
+import { todayStr } from '../lib/format'
 
 interface DataContextValue {
   data: AppData
@@ -37,7 +38,7 @@ interface DataContextValue {
 
   // transactions
   addTransaction: (input: { description: string; categoryId: string; amount: number; type: EntryType; date?: string }) => Transaction
-  updateTransaction: (id: string, patch: Partial<Pick<Transaction, 'date' | 'description' | 'categoryId' | 'categoryName' | 'amount'>>) => void
+  updateTransaction: (id: string, patch: Partial<Pick<Transaction, 'date' | 'description' | 'categoryId' | 'categoryName' | 'amount' | 'confirmed'>>) => void
   removeTransaction: (id: string) => void
 
   // investments
@@ -50,10 +51,6 @@ interface DataContextValue {
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
-}
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(() => loadData())
@@ -135,15 +132,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       addTransaction: (input) => {
         const category = data.categories.find((c) => c.id === input.categoryId)
+        const date = input.date ?? todayStr()
         const tx: Transaction = {
           id: newId(),
-          date: input.date ?? todayStr(),
+          date,
           description: input.description.trim(),
           categoryId: input.categoryId,
           categoryName: category?.name ?? 'Uncategorized',
           amount: input.amount,
           type: input.type,
           createdAt: Date.now(),
+          ...(date > todayStr() ? { confirmed: false } : {}),
         }
         setData((d) => ({ ...d, transactions: [tx, ...d.transactions] }))
         return tx

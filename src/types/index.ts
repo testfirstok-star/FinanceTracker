@@ -33,6 +33,8 @@ export interface Transaction {
   amount: number
   type: EntryType
   createdAt: number
+  /** Only set when logged with a future date in advance; false until the user reviews/confirms it. */
+  confirmed?: boolean
 }
 
 export interface InvestmentAccount {
