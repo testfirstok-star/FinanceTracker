@@ -59,6 +59,14 @@ export default function CategoryPieChart({ data }: { data: Array<{ name: string;
             verticalAlign="middle"
             align="right"
             wrapperStyle={{ fontSize: 12, color: 'var(--chart-text)' }}
+            formatter={(value, entry) => {
+              const amount = (entry?.payload as unknown as { value?: number } | undefined)?.value ?? 0
+              return (
+                <span>
+                  {value} <span style={{ color: 'var(--color-muted)' }}>{formatMoney(amount)}</span>
+                </span>
+              )
+            }}
           />
         </PieChart>
       </ResponsiveContainer>

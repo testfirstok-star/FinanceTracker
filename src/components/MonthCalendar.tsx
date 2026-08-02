@@ -73,7 +73,7 @@ export default function MonthCalendar({ monthKeyStr, totalsByDay, limits, select
               } ${isSelected ? 'ring-2 ring-text2 ring-offset-1 ring-offset-panel' : ''}`}
             >
               <span className={dayClass}>{cell.day}</span>
-              {amount > 0 && <span className={`font-figure text-xs ${amountClass}`}>{Math.round(amount)}</span>}
+              {amount > 0 && <span className={`font-figure text-[10px] ${amountClass}`}>{Math.round(amount)}</span>}
             </button>
           )
         })}

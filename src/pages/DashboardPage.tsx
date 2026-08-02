@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useData } from '../hooks/DataContext'
 import Card from '../components/Card'
 import CategoryPieChart from '../components/CategoryPieChart'
+import Collapsible from '../components/Collapsible'
 import MonthCalendar from '../components/MonthCalendar'
 import PageTitle from '../components/PageTitle'
 import { formatMoney, formatMonthLabel, monthKey, shiftMonth, todayStr } from '../lib/format'
@@ -48,6 +49,9 @@ export default function DashboardPage() {
   const [pieType, setPieType] = useState<EntryType>('expense')
   const [selectedExpenseDay, setSelectedExpenseDay] = useState<string | null>(null)
   const [selectedIncomeDay, setSelectedIncomeDay] = useState<string | null>(null)
+  const [customStart, setCustomStart] = useState(`${monthKey(todayStr())}-01`)
+  const [customEnd, setCustomEnd] = useState(todayStr())
+  const [customPieType, setCustomPieType] = useState<EntryType>('expense')
 
   const monthTx = useMemo(() => data.transactions.filter((t) => monthKey(t.date) === month), [data.transactions, month])
   const expenseTx = monthTx.filter((t) => t.type === 'expense')
@@ -66,6 +70,15 @@ export default function DashboardPage() {
     for (const t of txs) map[t.date] = (map[t.date] ?? 0) + t.amount
     return map
   }
+
+  const customTx = useMemo(
+    () => data.transactions.filter((t) => t.date >= customStart && t.date <= customEnd),
+    [data.transactions, customStart, customEnd],
+  )
+  const customExpenseTx = customTx.filter((t) => t.type === 'expense')
+  const customIncomeTx = customTx.filter((t) => t.type === 'income')
+  const customTotalExpense = customExpenseTx.reduce((s, t) => s + t.amount, 0)
+  const customTotalIncome = customIncomeTx.reduce((s, t) => s + t.amount, 0)
 
   return (
     <div className="space-y-6">
@@ -126,6 +139,53 @@ export default function DashboardPage() {
           onDayClick={(date) => setSelectedIncomeDay((d) => (d === date ? null : date))}
         />
         {selectedIncomeDay && <DayLog date={selectedIncomeDay} transactions={incomeTx.filter((t) => t.date === selectedIncomeDay)} />}
+      </Card>
+
+      <Card>
+        <Collapsible title="Custom report">
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="section-label mb-1 block">Start date</span>
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="w-full rounded-md border border-line bg-panel-hover px-3 py-1.5 text-xs"
+              />
+            </label>
+            <label className="block">
+              <span className="section-label mb-1 block">End date</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="w-full rounded-md border border-line bg-panel-hover px-3 py-1.5 text-xs"
+              />
+            </label>
+          </div>
+
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            <StatTile label="Income" value={formatMoney(customTotalIncome)} tone="good" />
+            <StatTile label="Expenses" value={formatMoney(customTotalExpense)} tone="bad" />
+            <StatTile label="Net" value={formatMoney(customTotalIncome - customTotalExpense)} />
+          </div>
+
+          <div className="mb-2 flex gap-1">
+            <button
+              onClick={() => setCustomPieType('expense')}
+              className={`rounded-md px-2 py-1 text-xs font-medium ${customPieType === 'expense' ? 'bg-gold text-ink' : 'bg-panel-hover'}`}
+            >
+              Expense categories
+            </button>
+            <button
+              onClick={() => setCustomPieType('income')}
+              className={`rounded-md px-2 py-1 text-xs font-medium ${customPieType === 'income' ? 'bg-gold text-ink' : 'bg-panel-hover'}`}
+            >
+              Income categories
+            </button>
+          </div>
+          <CategoryPieChart data={breakdown(customPieType === 'expense' ? customExpenseTx : customIncomeTx)} />
+        </Collapsible>
       </Card>
     </div>
   )
