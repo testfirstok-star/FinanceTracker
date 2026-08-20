@@ -9,6 +9,8 @@ import type {
   InvestmentEntryType,
   InvestmentTransaction,
   Keyword,
+  RecurrenceFrequency,
+  RecurringExpense,
   Transaction,
 } from '../types'
 import { loadData, newId, saveData } from '../storage/db'
@@ -35,6 +37,25 @@ interface DataContextValue {
   addFixedItem: (name: string, amount: number, categoryId: string, type: EntryType) => void
   updateFixedItem: (id: string, name: string, amount: number, categoryId: string) => void
   removeFixedItem: (id: string) => void
+
+  // recurring expenses
+  addRecurringExpense: (input: {
+    name: string
+    amount: number
+    categoryId: string
+    type: EntryType
+    frequency: RecurrenceFrequency
+    interval: number
+    startDate: string
+  }) => void
+  updateRecurringExpense: (
+    id: string,
+    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate'>>,
+  ) => void
+  removeRecurringExpense: (id: string) => void
+  toggleRecurringExpensePaused: (id: string) => void
+  /** Resolves one due occurrence: when logged is true it's added to the transaction log, either way the occurrence is marked resolved. */
+  resolveRecurringOccurrence: (id: string, occurrenceDate: string, logged: boolean, amount?: number) => void
 
   // transactions
   addTransaction: (input: { description: string; categoryId: string; amount: number; type: EntryType; date?: string }) => Transaction
@@ -67,6 +88,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           categories: next.categories ?? [],
           keywords: next.keywords ?? [],
           fixedItems: next.fixedItems ?? [],
+          recurringExpenses: next.recurringExpenses ?? [],
           transactions: next.transactions ?? [],
           investmentAccounts: next.investmentAccounts ?? [],
           investmentTransactions: next.investmentTransactions ?? [],
@@ -128,6 +150,71 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
       removeFixedItem: (id) => {
         setData((d) => ({ ...d, fixedItems: d.fixedItems.filter((f) => f.id !== id) }))
+      },
+
+      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate }) => {
+        const item: RecurringExpense = {
+          id: newId(),
+          name: name.trim(),
+          amount,
+          categoryId,
+          type,
+          frequency,
+          interval: Math.max(1, Math.round(interval) || 1),
+          startDate,
+        }
+        setData((d) => ({ ...d, recurringExpenses: [...d.recurringExpenses, item] }))
+      },
+      updateRecurringExpense: (id, patch) => {
+        setData((d) => ({
+          ...d,
+          recurringExpenses: d.recurringExpenses.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  ...patch,
+                  ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+                  ...(patch.interval !== undefined ? { interval: Math.max(1, Math.round(patch.interval) || 1) } : {}),
+                }
+              : r,
+          ),
+        }))
+      },
+      removeRecurringExpense: (id) => {
+        setData((d) => ({ ...d, recurringExpenses: d.recurringExpenses.filter((r) => r.id !== id) }))
+      },
+      toggleRecurringExpensePaused: (id) => {
+        setData((d) => ({
+          ...d,
+          recurringExpenses: d.recurringExpenses.map((r) => (r.id === id ? { ...r, paused: !r.paused } : r)),
+        }))
+      },
+      resolveRecurringOccurrence: (id, occurrenceDate, logged, amount) => {
+        const item = data.recurringExpenses.find((r) => r.id === id)
+        if (!item) return
+        if (!logged) {
+          setData((d) => ({
+            ...d,
+            recurringExpenses: d.recurringExpenses.map((r) => (r.id === id ? { ...r, lastResolvedDate: occurrenceDate } : r)),
+          }))
+          return
+        }
+        const category = data.categories.find((c) => c.id === item.categoryId)
+        const tx: Transaction = {
+          id: newId(),
+          date: occurrenceDate,
+          description: item.name,
+          categoryId: item.categoryId,
+          categoryName: category?.name ?? 'Uncategorized',
+          amount: amount ?? item.amount,
+          type: item.type,
+          createdAt: Date.now(),
+        }
+        setData((d) => ({
+          ...d,
+          transactions: [tx, ...d.transactions],
+          recurringExpenses: d.recurringExpenses.map((r) => (r.id === id ? { ...r, lastResolvedDate: occurrenceDate } : r)),
+        }))
       },
 
       addTransaction: (input) => {

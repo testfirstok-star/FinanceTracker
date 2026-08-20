@@ -1,6 +1,7 @@
 import Card from '../components/Card'
 import ChatLogger from '../components/ChatLogger'
 import FixedItemPanel from '../components/FixedItemPanel'
+import RecurringExpensePanel from '../components/RecurringExpensePanel'
 import KeywordManager from '../components/KeywordManager'
 import Collapsible from '../components/Collapsible'
 import PageTitle from '../components/PageTitle'
@@ -21,6 +22,10 @@ export default function LoggingPage() {
 
       <Card title="Fixed expenses">
         <FixedItemPanel type="expense" />
+      </Card>
+
+      <Card title="Recurring expenses">
+        <RecurringExpensePanel type="expense" />
       </Card>
 
       <Card title="Fixed income">

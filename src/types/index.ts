@@ -24,6 +24,25 @@ export interface FixedItem {
   type: EntryType
 }
 
+export type RecurrenceFrequency = 'weekly' | 'monthly' | 'yearly'
+
+export interface RecurringExpense {
+  id: string
+  name: string
+  amount: number
+  categoryId: string
+  type: EntryType
+  frequency: RecurrenceFrequency
+  /** Occurs every N frequency units, e.g. interval 2 + frequency 'monthly' = every 2 months. */
+  interval: number
+  /** First occurrence date, YYYY-MM-DD — also the anchor for the day-of-week/month/year. */
+  startDate: string
+  /** Date (YYYY-MM-DD) of the most recently resolved occurrence (logged or skipped). Unset until the first one is resolved. */
+  lastResolvedDate?: string
+  /** Paused items are excluded from the due checklist but keep their schedule for when resumed. */
+  paused?: boolean
+}
+
 export interface Transaction {
   id: string
   date: string // YYYY-MM-DD
@@ -65,6 +84,7 @@ export interface AppData {
   categories: Category[]
   keywords: Keyword[]
   fixedItems: FixedItem[]
+  recurringExpenses: RecurringExpense[]
   transactions: Transaction[]
   investmentAccounts: InvestmentAccount[]
   investmentTransactions: InvestmentTransaction[]
