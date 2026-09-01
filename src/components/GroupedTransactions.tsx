@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { EntryType, Transaction } from '../types'
 import { formatMoney } from '../lib/format'
-import AccountQuickLogForm from './AccountQuickLogForm'
 import Collapsible from './Collapsible'
 
 const UNASSIGNED_KEY = '__unassigned__'
@@ -111,7 +110,6 @@ export default function GroupedTransactions({
           }
           right={<span className="font-figure text-sm font-medium text-text">{formatMoney(g.total)}</span>}
         >
-          {groupBy === 'account' && g.key !== UNASSIGNED_KEY && <AccountQuickLogForm accountId={g.key} />}
           <div className="space-y-1.5">
             {g.transactions.length === 0 && <p className="text-xs text-muted">No entries in this period yet.</p>}
             {g.transactions.map((t) =>

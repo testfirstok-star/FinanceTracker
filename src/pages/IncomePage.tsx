@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import Card from '../components/Card'
 import Collapsible from '../components/Collapsible'
-import TransactionForm from '../components/TransactionForm'
 import GroupedTransactions from '../components/GroupedTransactions'
 import CategoryManager from '../components/CategoryManager'
 import RecurringExpensePanel from '../components/RecurringExpensePanel'
@@ -38,10 +37,6 @@ export default function IncomePage() {
 
       <Card title="Recurring income">
         <RecurringExpensePanel type="income" />
-      </Card>
-
-      <Card title="Log income">
-        <TransactionForm type="income" />
       </Card>
 
       <Card>
