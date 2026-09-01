@@ -89,7 +89,7 @@ export default function InvestmentAccountSection({ account }: { account: Investm
             e.stopPropagation()
             if (confirm(`Remove investment "${account.name}" and all its logged entries?`)) removeInvestmentAccount(account.id)
           }}
-          className="text-muted hover:text-accent-red"
+          className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-accent-red"
           title="Remove investment"
         >
           ✕
@@ -232,7 +232,10 @@ export default function InvestmentAccountSection({ account }: { account: Investm
                     <td className="px-3 py-2 text-xs text-muted">{TYPE_LABELS[t.type]}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-medium">{formatMoney(t.amount)}</td>
                     <td className="px-3 py-2 text-right">
-                      <button onClick={() => removeInvestmentTransaction(t.id)} className="text-muted hover:text-accent-red">
+                      <button
+                        onClick={() => removeInvestmentTransaction(t.id)}
+                        className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-accent-red"
+                      >
                         ✕
                       </button>
                     </td>

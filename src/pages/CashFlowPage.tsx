@@ -19,11 +19,22 @@ export default function CashFlowPage() {
     const investmentAccountIds = new Set(data.accounts.filter((a) => hasTag(a, 'invest')).map((a) => a.id))
     const recurAccountIds = new Set(data.accounts.filter((a) => hasTag(a, 'recur')).map((a) => a.id))
     const expenseTx = inRange.filter((t) => t.type === 'expense')
-    const investment = expenseTx.filter((t) => t.accountId && investmentAccountIds.has(t.accountId)).reduce((s, t) => s + t.amount, 0)
+    const investmentFromAccounts = expenseTx
+      .filter((t) => t.accountId && investmentAccountIds.has(t.accountId))
+      .reduce((s, t) => s + t.amount, 0)
     const recurringTracking = expenseTx.filter((t) => t.accountId && recurAccountIds.has(t.accountId)).reduce((s, t) => s + t.amount, 0)
     const expenses = expenseTx
       .filter((t) => !t.accountId || (!investmentAccountIds.has(t.accountId) && !recurAccountIds.has(t.accountId)))
       .reduce((s, t) => s + t.amount, 0)
+
+    // Also pull in what's actually logged on the Investments page — deposits/withdrawals are real money
+    // moving between your everyday cash and your portfolio, so they belong in this total too (dividends/fees
+    // stay portfolio-internal and don't count here). This is on top of the lightweight "invest"-tagged
+    // account bridge above, so either way of logging investment activity shows up here.
+    const investmentTxInRange = data.investmentTransactions.filter((t) => t.date >= period.start && t.date <= period.end)
+    const deposits = investmentTxInRange.filter((t) => t.type === 'deposit').reduce((s, t) => s + t.amount, 0)
+    const withdrawals = investmentTxInRange.filter((t) => t.type === 'withdrawal').reduce((s, t) => s + t.amount, 0)
+    const investment = investmentFromAccounts + deposits - withdrawals
 
     // Loans — money lent out or repaid this period. Real cash movement, so it factors into Savings
     // just like Investment, but it never touches Income/Expenses.
@@ -36,12 +47,12 @@ export default function CashFlowPage() {
     // doesn't factor into Savings — only real Expenses, Investment, and net Loans outflows do.
     const savings = income - expenses - investment - netLoanOut
     return { income, expenses, investment, recurringTracking, netLoanOut, savings }
-  }, [data.transactions, data.accounts, data.loanTransactions, period.start, period.end])
+  }, [data.transactions, data.accounts, data.investmentTransactions, data.loanTransactions, period.start, period.end])
 
   // Denominator that always fits the bar to 100%, whether or not you overspent this period.
   const denom = Math.max(income, expenses + investment + Math.max(netLoanOut, 0), 1)
   const pct = (n: number) => Math.max(0, (n / denom) * 100)
-  const hasInvestmentAccounts = data.accounts.some((a) => hasTag(a, 'invest'))
+  const hasInvestmentSource = data.accounts.some((a) => hasTag(a, 'invest')) || data.investmentAccounts.length > 0
 
   return (
     <div className="space-y-6">
@@ -96,11 +107,11 @@ export default function CashFlowPage() {
         )}
       </Card>
 
-      {!hasInvestmentAccounts && (
+      {!hasInvestmentSource && (
         <Card>
           <p className="text-sm text-muted">
-            Tip: tag an account "invest" on the Expenses page to have money you log there count toward the Investment bucket above
-            instead of Expenses.
+            Tip: the Investment figure above picks up deposits/withdrawals from the Investments page automatically, or you can tag
+            an account "invest" on the Expenses page to have money you log there count toward it instead of Expenses.
           </p>
         </Card>
       )}

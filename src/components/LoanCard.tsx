@@ -75,11 +75,19 @@ export default function LoanCard({ loan }: { loan: Loan }) {
             {formatMoney(balance)}
           </span>
           {loan.archived ? (
-            <button onClick={() => restoreLoan(loan.id)} className="text-xs text-gold hover:text-gold-dark" title="Restore">
+            <button
+              onClick={() => restoreLoan(loan.id)}
+              className="-m-1.5 rounded-md p-1.5 text-xs text-gold transition-colors hover:bg-panel-hover hover:text-gold-dark"
+              title="Restore"
+            >
               ↺
             </button>
           ) : (
-            <button onClick={() => archiveLoan(loan.id)} className="text-xs text-muted hover:text-accent-red" title="Archive">
+            <button
+              onClick={() => archiveLoan(loan.id)}
+              className="-m-1.5 rounded-md p-1.5 text-xs text-muted transition-colors hover:bg-panel-hover hover:text-accent-red"
+              title="Archive"
+            >
               ✕
             </button>
           )}
@@ -190,10 +198,18 @@ export default function LoanCard({ loan }: { loan: Loan }) {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-figure font-medium">{formatMoney(t.amount)}</span>
-                      <button onClick={() => startEditTx(t.id)} className="text-muted hover:text-gold" title="Edit">
+                      <button
+                        onClick={() => startEditTx(t.id)}
+                        className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-gold"
+                        title="Edit"
+                      >
                         ✎
                       </button>
-                      <button onClick={() => removeLoanTransaction(t.id)} className="text-muted hover:text-accent-red" title="Delete">
+                      <button
+                        onClick={() => removeLoanTransaction(t.id)}
+                        className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-accent-red"
+                        title="Delete"
+                      >
                         ✕
                       </button>
                     </div>

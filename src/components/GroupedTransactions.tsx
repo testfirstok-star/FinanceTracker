@@ -195,10 +195,18 @@ export default function GroupedTransactions({
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <span className="font-figure text-sm font-medium">{formatMoney(t.amount)}</span>
-                    <button onClick={() => startEdit(t)} className="text-muted hover:text-gold" title="Edit">
+                    <button
+                      onClick={() => startEdit(t)}
+                      className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-gold"
+                      title="Edit"
+                    >
                       ✎
                     </button>
-                    <button onClick={() => removeTransaction(t.id)} className="text-muted hover:text-accent-red" title="Delete">
+                    <button
+                      onClick={() => removeTransaction(t.id)}
+                      className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-accent-red"
+                      title="Delete"
+                    >
                       ✕
                     </button>
                   </div>
