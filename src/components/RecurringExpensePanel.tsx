@@ -271,18 +271,19 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                 <form
                   key={item.id}
                   onSubmit={saveEdit}
-                  className="flex flex-wrap items-center gap-1.5 rounded-lg border border-gold/40 px-2 py-2"
+                  className="grid grid-cols-1 gap-2 rounded-lg border border-gold/40 p-3 sm:grid-cols-2"
                 >
                   <input
                     autoFocus
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-24 border-b border-gold bg-transparent text-xs outline-none"
+                    placeholder="Item name"
+                    className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm sm:col-span-2"
                   />
                   <select
                     value={editCategoryId}
                     onChange={(e) => setEditCategoryId(e.target.value)}
-                    className="rounded border border-line bg-transparent text-xs"
+                    className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -294,7 +295,7 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                     <select
                       value={editAccountId}
                       onChange={(e) => setEditAccountId(e.target.value)}
-                      className="rounded border border-line bg-transparent text-xs"
+                      className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
                     >
                       <option value="">Account…</option>
                       {accounts.map((a) => (
@@ -310,38 +311,50 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                     min="0"
                     value={editAmount}
                     onChange={(e) => setEditAmount(e.target.value)}
-                    className="w-16 border-b border-gold bg-transparent text-xs outline-none"
+                    placeholder="Amount"
+                    className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
                   />
-                  <span className="text-xs text-muted">Every</span>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={editInterval}
-                    onChange={(e) => setEditInterval(e.target.value)}
-                    className="w-10 border-b border-gold bg-transparent text-xs outline-none"
-                  />
-                  <select
-                    value={editFrequency}
-                    onChange={(e) => setEditFrequency(e.target.value as RecurrenceFrequency)}
-                    className="rounded border border-line bg-transparent text-xs"
-                  >
-                    <option value="weekly">week(s)</option>
-                    <option value="monthly">month(s)</option>
-                    <option value="yearly">year(s)</option>
-                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <span className="shrink-0 text-xs text-muted">Every</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={editInterval}
+                      onChange={(e) => setEditInterval(e.target.value)}
+                      className="w-14 rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
+                    />
+                    <select
+                      value={editFrequency}
+                      onChange={(e) => setEditFrequency(e.target.value as RecurrenceFrequency)}
+                      className="flex-1 rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
+                    >
+                      <option value="weekly">week(s)</option>
+                      <option value="monthly">month(s)</option>
+                      <option value="yearly">year(s)</option>
+                    </select>
+                  </div>
                   <input
                     type="date"
                     value={editStartDate}
                     onChange={(e) => setEditStartDate(e.target.value)}
-                    className="rounded border border-line bg-transparent text-xs"
+                    className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
                   />
-                  <button type="submit" className="text-gold hover:text-gold-dark" title="Save">
-                    ✓
-                  </button>
-                  <button type="button" onClick={() => setEditingId(null)} className="text-muted hover:text-accent-red" title="Cancel">
-                    ✕
-                  </button>
+                  <div className="flex gap-2 sm:col-span-2">
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-md bg-gold px-3 py-2 text-sm font-medium text-ink hover:bg-gold-dark"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="flex-1 rounded-md border border-line px-3 py-2 text-sm text-muted hover:border-accent-red/40 hover:text-accent-red"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </form>
               ) : (
                 <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3 py-2">

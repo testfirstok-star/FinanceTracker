@@ -50,18 +50,18 @@ export default function UpcomingEntries({ type }: { type: EntryType }) {
           className="mt-0.5 h-4 w-4 shrink-0 accent-gold"
         />
         {editingId === t.id ? (
-          <div className="flex-1 space-y-1">
+          <div className="flex-1 space-y-1.5">
             <input
               autoFocus
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              className="w-full rounded-md border border-line bg-panel-hover px-2 py-1 text-xs"
+              className="w-full rounded-md border border-line bg-panel-hover px-2 py-1.5 text-xs"
             />
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1.5">
               <select
                 value={editCategoryId}
                 onChange={(e) => setEditCategoryId(e.target.value)}
-                className="flex-1 rounded-md border border-line bg-panel-hover px-2 py-1 text-xs"
+                className="flex-1 rounded-md border border-line bg-panel-hover px-2 py-1.5 text-xs"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -75,13 +75,21 @@ export default function UpcomingEntries({ type }: { type: EntryType }) {
                 min="0"
                 value={editAmount}
                 onChange={(e) => setEditAmount(e.target.value)}
-                className="w-20 rounded-md border border-line bg-panel-hover px-2 py-1 text-xs"
+                className="w-20 rounded-md border border-line bg-panel-hover px-2 py-1.5 text-xs"
               />
-              <button onClick={() => saveEdit(t.id)} className="text-gold hover:text-gold-dark" title="Save">
-                ✓
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => saveEdit(t.id)}
+                className="flex-1 rounded-md bg-gold px-3 py-1.5 text-xs font-medium text-ink hover:bg-gold-dark"
+              >
+                Save
               </button>
-              <button onClick={() => setEditingId(null)} className="text-muted hover:text-accent-red" title="Cancel">
-                ✕
+              <button
+                onClick={() => setEditingId(null)}
+                className="flex-1 rounded-md border border-line px-3 py-1.5 text-xs text-muted hover:border-accent-red/40 hover:text-accent-red"
+              >
+                Cancel
               </button>
             </div>
           </div>
