@@ -12,7 +12,7 @@ export default function CashFlowPage() {
   const period = usePeriod()
   const { data } = useData()
 
-  const { income, expenses, investment, recurringTracking, savings } = useMemo(() => {
+  const { income, expenses, investment, recurringTracking, netLoanOut, savings } = useMemo(() => {
     const inRange = data.transactions.filter((t) => t.date >= period.start && t.date <= period.end)
     const income = inRange.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
 
@@ -24,14 +24,22 @@ export default function CashFlowPage() {
     const expenses = expenseTx
       .filter((t) => !t.accountId || (!investmentAccountIds.has(t.accountId) && !recurAccountIds.has(t.accountId)))
       .reduce((s, t) => s + t.amount, 0)
+
+    // Loans — money lent out or repaid this period. Real cash movement, so it factors into Savings
+    // just like Investment, but it never touches Income/Expenses.
+    const loanTxInRange = data.loanTransactions.filter((t) => t.date >= period.start && t.date <= period.end)
+    const loansGiven = loanTxInRange.filter((t) => t.type === 'lent').reduce((s, t) => s + t.amount, 0)
+    const loansRepaid = loanTxInRange.filter((t) => t.type === 'repaid').reduce((s, t) => s + t.amount, 0)
+    const netLoanOut = loansGiven - loansRepaid
+
     // Recurring-tagged spend is tracked separately (often a duplicate of a bill you log elsewhere), so it
-    // doesn't factor into Savings — only real Expenses and Investment outflows do.
-    const savings = income - expenses - investment
-    return { income, expenses, investment, recurringTracking, savings }
-  }, [data.transactions, data.accounts, period.start, period.end])
+    // doesn't factor into Savings — only real Expenses, Investment, and net Loans outflows do.
+    const savings = income - expenses - investment - netLoanOut
+    return { income, expenses, investment, recurringTracking, netLoanOut, savings }
+  }, [data.transactions, data.accounts, data.loanTransactions, period.start, period.end])
 
   // Denominator that always fits the bar to 100%, whether or not you overspent this period.
-  const denom = Math.max(income, expenses + investment, 1)
+  const denom = Math.max(income, expenses + investment + Math.max(netLoanOut, 0), 1)
   const pct = (n: number) => Math.max(0, (n / denom) * 100)
   const hasInvestmentAccounts = data.accounts.some((a) => hasTag(a, 'invest'))
 
@@ -41,10 +49,11 @@ export default function CashFlowPage() {
       <PeriodControls period={period} />
 
       <Card title={period.label}>
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
           <StatTile label="Income" value={formatMoney(income)} tone="good" />
           <StatTile label="Expenses" value={formatMoney(expenses)} tone="bad" />
           <StatTile label="Investment" value={formatMoney(investment)} />
+          <StatTile label="Loans (net)" value={formatMoney(netLoanOut)} />
           <StatTile label="Savings" value={formatMoney(savings)} tone={savings >= 0 ? 'good' : 'bad'} />
         </div>
 
@@ -54,6 +63,9 @@ export default function CashFlowPage() {
             <div className="flex h-3 overflow-hidden rounded-full bg-panel-hover">
               <div className="bg-accent-red" style={{ width: `${pct(expenses)}%` }} title={`Expenses ${formatMoney(expenses)}`} />
               <div className="bg-gold" style={{ width: `${pct(investment)}%` }} title={`Investment ${formatMoney(investment)}`} />
+              {netLoanOut > 0 && (
+                <div className="bg-accent-blue" style={{ width: `${pct(netLoanOut)}%` }} title={`Loans (net) ${formatMoney(netLoanOut)}`} />
+              )}
               {savings > 0 && <div className="bg-accent-green" style={{ width: `${pct(savings)}%` }} title={`Savings ${formatMoney(savings)}`} />}
             </div>
             <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted">
@@ -62,6 +74,9 @@ export default function CashFlowPage() {
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-gold" /> Investment
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-accent-blue" /> Loans
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-accent-green" /> Savings

@@ -156,8 +156,10 @@ export default function ExpensesPage() {
         </Collapsible>
       </Card>
 
-      <Card title="Accounts">
-        <AccountManager />
+      <Card>
+        <Collapsible title="Manage accounts">
+          <AccountManager />
+        </Collapsible>
       </Card>
 
       <Card title="Expense categories">

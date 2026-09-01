@@ -89,9 +89,37 @@ export interface InvestmentTransaction {
   createdAt: number
 }
 
+/** Money lent to a specific person — created "like an account", one per person. */
+export interface Loan {
+  id: string
+  personName: string
+  createdAt: number
+  /** Fully settled/no-longer-tracked loans are hidden but keep their history. */
+  archived?: boolean
+}
+
+export type LoanEntryType = 'lent' | 'repaid'
+
+export interface LoanTransaction {
+  id: string
+  loanId: string
+  date: string // YYYY-MM-DD
+  type: LoanEntryType
+  amount: number
+  description?: string
+  createdAt: number
+}
+
+/** One row of the bottom nav's arrange/hide configuration — order in the array is display order. */
+export interface NavConfigEntry {
+  key: string
+  hidden?: boolean
+}
+
 export interface AppSettings {
   weekdayExpenseLimit?: number
   weekendExpenseLimit?: number
+  navConfig?: NavConfigEntry[]
 }
 
 export interface AppData {
@@ -102,5 +130,7 @@ export interface AppData {
   transactions: Transaction[]
   investmentAccounts: InvestmentAccount[]
   investmentTransactions: InvestmentTransaction[]
+  loans: Loan[]
+  loanTransactions: LoanTransaction[]
   settings: AppSettings
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurringExpense } from '../types'
-import { todayStr } from '../lib/format'
+import { daysInMonth, monthKey, todayStr } from '../lib/format'
 import { getDueOccurrences } from '../lib/recurrence'
 import { findFirstAccountWithTag } from '../lib/tags'
 
@@ -9,12 +9,16 @@ export default function RecurringDueChecklist({ type }: { type: EntryType }) {
   const { data, resolveRecurringOccurrence } = useData()
   const items = data.recurringExpenses.filter((r) => r.type === type)
   const today = todayStr()
+  // Show everything expected this month from the 1st, not just what's strictly due as of today —
+  // so the checklist reads as "what to expect this month," confirmable any time during the month.
+  const thisMonth = monthKey(today)
+  const monthEnd = `${thisMonth}-${String(daysInMonth(thisMonth)).padStart(2, '0')}`
   const [dueAmounts, setDueAmounts] = useState<Record<string, string>>({})
 
   const dueRows = items
     .filter((item) => !item.paused)
     .map((item) => {
-      const due = getDueOccurrences(item, today)
+      const due = getDueOccurrences(item, monthEnd)
       if (due.length === 0) return null
       return { item, dueDate: due[0], moreOverdue: due.length - 1 }
     })
@@ -61,7 +65,7 @@ export default function RecurringDueChecklist({ type }: { type: EntryType }) {
                 <div className="text-sm font-medium text-text">{item.name}</div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted">
                   <span className="rounded-full bg-panel px-2 py-0.5">{catName}</span>
-                  <span>Due {dueDate}</span>
+                  <span>{dueDate <= today ? 'Due' : 'Expected'} {dueDate}</span>
                   {moreOverdue > 0 && <span className="text-accent-red">+{moreOverdue} more overdue</span>}
                 </div>
               </div>
@@ -93,7 +97,7 @@ export default function RecurringDueChecklist({ type }: { type: EntryType }) {
             </div>
           )
         })}
-        {dueRows.length === 0 && <p className="text-sm text-muted">Nothing due yet — you're all caught up.</p>}
+        {dueRows.length === 0 && <p className="text-sm text-muted">Nothing expected this month — you're all caught up.</p>}
       </div>
     </div>
   )

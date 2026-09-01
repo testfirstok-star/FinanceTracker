@@ -82,6 +82,8 @@ function defaultData(): AppData {
     transactions: [],
     investmentAccounts: [],
     investmentTransactions: [],
+    loans: [],
+    loanTransactions: [],
     settings: {},
   }
 }
@@ -150,6 +152,8 @@ export function loadData(): AppData {
       transactions: parsed.transactions ?? [],
       investmentAccounts: parsed.investmentAccounts ?? [],
       investmentTransactions: parsed.investmentTransactions ?? [],
+      loans: parsed.loans ?? [],
+      loanTransactions: parsed.loanTransactions ?? [],
       settings: parsed.settings ?? {},
     }
   } catch {

@@ -9,6 +9,9 @@ import type {
   InvestmentEntryType,
   InvestmentTransaction,
   Keyword,
+  Loan,
+  LoanEntryType,
+  LoanTransaction,
   RecurrenceFrequency,
   RecurringExpense,
   Transaction,
@@ -82,6 +85,15 @@ interface DataContextValue {
   addInvestmentTransaction: (input: { accountId: string; description: string; category: string; amount: number; type: InvestmentEntryType; date?: string }) => void
   updateInvestmentTransaction: (id: string, patch: Partial<Pick<InvestmentTransaction, 'date' | 'description' | 'category' | 'amount' | 'type'>>) => void
   removeInvestmentTransaction: (id: string) => void
+
+  // loans — money lent to a person, kept separate from Income/Expenses
+  addLoan: (personName: string, initialAmount: number, date?: string) => Loan
+  renameLoan: (id: string, personName: string) => void
+  archiveLoan: (id: string) => void
+  restoreLoan: (id: string) => void
+  addLoanTransaction: (input: { loanId: string; type: LoanEntryType; amount: number; date?: string; description?: string }) => void
+  updateLoanTransaction: (id: string, patch: Partial<Pick<LoanTransaction, 'date' | 'amount' | 'description'>>) => void
+  removeLoanTransaction: (id: string) => void
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -105,6 +117,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           transactions: next.transactions ?? [],
           investmentAccounts: next.investmentAccounts ?? [],
           investmentTransactions: next.investmentTransactions ?? [],
+          loans: next.loans ?? [],
+          loanTransactions: next.loanTransactions ?? [],
           settings: next.settings ?? {},
         })
       },
@@ -310,6 +324,50 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
       removeInvestmentTransaction: (id) => {
         setData((d) => ({ ...d, investmentTransactions: d.investmentTransactions.filter((t) => t.id !== id) }))
+      },
+
+      addLoan: (personName, initialAmount, date) => {
+        const loan: Loan = { id: newId(), personName: personName.trim(), createdAt: Date.now() }
+        const tx: LoanTransaction = {
+          id: newId(),
+          loanId: loan.id,
+          date: date ?? todayStr(),
+          type: 'lent',
+          amount: initialAmount,
+          createdAt: Date.now(),
+        }
+        setData((d) => ({ ...d, loans: [...d.loans, loan], loanTransactions: [tx, ...d.loanTransactions] }))
+        return loan
+      },
+      renameLoan: (id, personName) => {
+        setData((d) => ({ ...d, loans: d.loans.map((l) => (l.id === id ? { ...l, personName: personName.trim() } : l)) }))
+      },
+      archiveLoan: (id) => {
+        setData((d) => ({ ...d, loans: d.loans.map((l) => (l.id === id ? { ...l, archived: true } : l)) }))
+      },
+      restoreLoan: (id) => {
+        setData((d) => ({ ...d, loans: d.loans.map((l) => (l.id === id ? { ...l, archived: false } : l)) }))
+      },
+      addLoanTransaction: (input) => {
+        const tx: LoanTransaction = {
+          id: newId(),
+          loanId: input.loanId,
+          date: input.date ?? todayStr(),
+          type: input.type,
+          amount: input.amount,
+          description: input.description?.trim() || undefined,
+          createdAt: Date.now(),
+        }
+        setData((d) => ({ ...d, loanTransactions: [tx, ...d.loanTransactions] }))
+      },
+      updateLoanTransaction: (id, patch) => {
+        setData((d) => ({
+          ...d,
+          loanTransactions: d.loanTransactions.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+        }))
+      },
+      removeLoanTransaction: (id) => {
+        setData((d) => ({ ...d, loanTransactions: d.loanTransactions.filter((t) => t.id !== id) }))
       },
     }
   }, [data])

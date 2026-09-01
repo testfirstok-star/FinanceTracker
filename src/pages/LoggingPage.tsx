@@ -47,8 +47,10 @@ export default function LoggingPage() {
         <RecurringDueChecklist type="expense" />
       </Card>
 
-      <Card title="Manage recurring expenses">
-        <RecurringManageList type="expense" />
+      <Card>
+        <Collapsible title="Manage recurring expenses">
+          <RecurringManageList type="expense" />
+        </Collapsible>
       </Card>
     </div>
   )
