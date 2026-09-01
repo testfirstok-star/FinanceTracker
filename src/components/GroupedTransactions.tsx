@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { EntryType, Transaction } from '../types'
 import { formatMoney } from '../lib/format'
+import AccountQuickLogForm from './AccountQuickLogForm'
 import Collapsible from './Collapsible'
 
 const UNASSIGNED_KEY = '__unassigned__'
@@ -36,6 +37,10 @@ export default function GroupedTransactions({
 
   const groups = useMemo(() => {
     const map = new Map<string, { label: string; transactions: Transaction[] }>()
+    // Seed every active account so it has its own loggable section even before it has any transactions.
+    if (groupBy === 'account') {
+      for (const a of accounts) map.set(a.id, { label: a.name, transactions: [] })
+    }
     for (const t of inRange) {
       let key: string
       let label: string
@@ -58,7 +63,7 @@ export default function GroupedTransactions({
         total: g.transactions.reduce((s, t) => s + t.amount, 0),
       }))
       .sort((a, b) => (a.key === UNASSIGNED_KEY ? 1 : b.key === UNASSIGNED_KEY ? -1 : b.total - a.total))
-  }, [inRange, groupBy, data.accounts, data.categories])
+  }, [inRange, groupBy, accounts, data.accounts, data.categories])
 
   function startEdit(t: Transaction) {
     setEditingId(t.id)
@@ -84,8 +89,12 @@ export default function GroupedTransactions({
     setEditingId(null)
   }
 
-  if (inRange.length === 0) {
-    return <p className="text-sm text-muted">No entries in this period.</p>
+  if (groups.length === 0) {
+    return (
+      <p className="text-sm text-muted">
+        {groupBy === 'account' ? 'No accounts yet — add one in the Accounts card below.' : 'No entries in this period.'}
+      </p>
+    )
   }
 
   return (
@@ -102,7 +111,9 @@ export default function GroupedTransactions({
           }
           right={<span className="font-figure text-sm font-medium text-text">{formatMoney(g.total)}</span>}
         >
+          {groupBy === 'account' && g.key !== UNASSIGNED_KEY && <AccountQuickLogForm accountId={g.key} />}
           <div className="space-y-1.5">
+            {g.transactions.length === 0 && <p className="text-xs text-muted">No entries in this period yet.</p>}
             {g.transactions.map((t) =>
               editingId === t.id ? (
                 <div key={t.id} className="grid grid-cols-1 gap-2 rounded-md border border-gold/40 p-3 sm:grid-cols-2">

@@ -74,10 +74,16 @@ export default function AccountManager() {
             )}
             <button
               onClick={() => updateAccount(a.id, { isInvestment: !a.isInvestment })}
-              className={`rounded-full px-1.5 py-0.5 text-[10px] ${a.isInvestment ? 'bg-gold/20 text-gold' : 'text-muted hover:text-gold'}`}
-              title="Toggle whether this account counts as Investment on the Cash Flow page"
+              className={`rounded-full px-2 py-0.5 text-[10px] ${
+                a.isInvestment ? 'bg-gold/20 text-gold' : 'border border-line text-muted hover:border-gold/40 hover:text-gold'
+              }`}
+              title={
+                a.isInvestment
+                  ? 'Counts toward Investment on the Cash Flow page — click to unmark'
+                  : 'Click to mark as an Investment account'
+              }
             >
-              Investment
+              {a.isInvestment ? '✓ Investment' : 'Mark as investment'}
             </button>
             {a.archived ? (
               <button onClick={() => restoreAccount(a.id)} className="text-gold hover:text-gold-dark" title="Restore">
