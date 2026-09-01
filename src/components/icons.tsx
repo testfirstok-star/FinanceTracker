@@ -55,6 +55,16 @@ export function InvestmentsIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function CashFlowIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 7h13a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h13" />
+      <polyline points="13 4 16 7 13 10" />
+      <polyline points="11 20 8 17 11 14" />
+    </Icon>
+  )
+}
+
 export function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

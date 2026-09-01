@@ -1,9 +1,14 @@
-import type { AppData, Category, Keyword } from '../types'
+import type { AppData, Category, Keyword, RecurringExpense } from '../types'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
 
 export function newId(): string {
   return crypto.randomUUID()
+}
+
+function todayStrLocal(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function defaultCategories(): Category[] {
@@ -72,7 +77,7 @@ function defaultData(): AppData {
   return {
     categories,
     keywords: defaultKeywords(categories),
-    fixedItems: [],
+    accounts: [],
     recurringExpenses: [],
     transactions: [],
     investmentAccounts: [],
@@ -81,16 +86,43 @@ function defaultData(): AppData {
   }
 }
 
+interface LegacyFixedItem {
+  id: string
+  name: string
+  amount: number
+  categoryId: string
+  type: 'expense' | 'income'
+}
+
+/** One-time migration: the old "Fixed items" panel was replaced by Recurring items with a schedule. */
+function migrateFixedItems(legacyFixedItems: unknown, existingRecurring: RecurringExpense[]): RecurringExpense[] {
+  if (!Array.isArray(legacyFixedItems) || legacyFixedItems.length === 0) return existingRecurring
+  const today = todayStrLocal()
+  const migrated: RecurringExpense[] = legacyFixedItems
+    .filter((f): f is LegacyFixedItem => f && typeof f === 'object' && typeof f.id === 'string')
+    .map((f) => ({
+      id: newId(),
+      name: f.name,
+      amount: f.amount,
+      categoryId: f.categoryId,
+      type: f.type,
+      frequency: 'monthly',
+      interval: 1,
+      startDate: today,
+    }))
+  return [...existingRecurring, ...migrated]
+}
+
 export function loadData(): AppData {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return defaultData()
   try {
-    const parsed = JSON.parse(raw) as Partial<AppData>
+    const parsed = JSON.parse(raw) as Partial<AppData> & { fixedItems?: unknown }
     return {
       categories: parsed.categories ?? [],
       keywords: parsed.keywords ?? [],
-      fixedItems: parsed.fixedItems ?? [],
-      recurringExpenses: parsed.recurringExpenses ?? [],
+      accounts: parsed.accounts ?? [],
+      recurringExpenses: migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? []),
       transactions: parsed.transactions ?? [],
       investmentAccounts: parsed.investmentAccounts ?? [],
       investmentTransactions: parsed.investmentTransactions ?? [],

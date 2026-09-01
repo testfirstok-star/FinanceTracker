@@ -4,12 +4,14 @@ import type { EntryType } from '../types'
 import { todayStr } from '../lib/format'
 
 export default function TransactionForm({ type }: { type: EntryType }) {
-  const { activeCategories, addCategory, addTransaction } = useData()
+  const { activeCategories, activeAccounts, addCategory, addTransaction } = useData()
   const categories = activeCategories(type)
+  const accounts = type === 'expense' ? activeAccounts() : []
 
   const [date, setDate] = useState(todayStr())
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [accountId, setAccountId] = useState('')
   const [amount, setAmount] = useState('')
   const [newCategoryMode, setNewCategoryMode] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -26,7 +28,7 @@ export default function TransactionForm({ type }: { type: EntryType }) {
     }
     if (!catId) return
 
-    addTransaction({ description, categoryId: catId, amount: amt, type, date })
+    addTransaction({ description, categoryId: catId, amount: amt, type, date, accountId: type === 'expense' ? accountId || undefined : undefined })
     setDescription('')
     setAmount('')
     setNewCategoryName('')
@@ -34,7 +36,7 @@ export default function TransactionForm({ type }: { type: EntryType }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+    <form onSubmit={handleSubmit} className={`grid grid-cols-1 gap-2 ${type === 'expense' ? 'sm:grid-cols-6' : 'sm:grid-cols-5'}`}>
       <input
         type="date"
         value={date}
@@ -81,6 +83,21 @@ export default function TransactionForm({ type }: { type: EntryType }) {
             </option>
           ))}
           <option value="__new__">+ New category</option>
+        </select>
+      )}
+
+      {type === 'expense' && (
+        <select
+          value={accountId}
+          onChange={(e) => setAccountId(e.target.value)}
+          className="rounded-md border border-line px-3 py-1.5 text-xs bg-panel-hover"
+        >
+          <option value="">Account (unassigned)</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
         </select>
       )}
 

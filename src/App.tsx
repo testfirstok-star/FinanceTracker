@@ -3,15 +3,17 @@ import { HashRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { DataProvider } from './hooks/DataContext'
 import LoggingPage from './pages/LoggingPage'
 import DashboardPage from './pages/DashboardPage'
+import CashFlowPage from './pages/CashFlowPage'
 import ExpensesPage from './pages/ExpensesPage'
 import IncomePage from './pages/IncomePage'
 import InvestmentsPage from './pages/InvestmentsPage'
-import { DashboardIcon, ExpensesIcon, IncomeIcon, InvestmentsIcon, LogIcon } from './components/icons'
+import { CashFlowIcon, DashboardIcon, ExpensesIcon, IncomeIcon, InvestmentsIcon, LogIcon } from './components/icons'
 import BackupRestoreControls from './components/BackupRestoreControls'
 
 const navItems = [
   { to: '/', label: 'Log', end: true, icon: LogIcon },
   { to: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+  { to: '/cashflow', label: 'Cash Flow', icon: CashFlowIcon },
   { to: '/expenses', label: 'Expenses', icon: ExpensesIcon },
   { to: '/income', label: 'Income', icon: IncomeIcon },
   { to: '/investments', label: 'Investments', icon: InvestmentsIcon },
@@ -61,6 +63,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LoggingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/cashflow" element={<CashFlowPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/income" element={<IncomePage />} />
             <Route path="/investments" element={<InvestmentsPage />} />

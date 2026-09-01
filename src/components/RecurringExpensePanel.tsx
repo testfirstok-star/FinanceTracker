@@ -8,6 +8,7 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
   const {
     data,
     activeCategories,
+    activeAccounts,
     addRecurringExpense,
     updateRecurringExpense,
     removeRecurringExpense,
@@ -15,6 +16,8 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
     resolveRecurringOccurrence,
   } = useData()
   const categories = activeCategories(type)
+  const accounts = activeAccounts()
+  const usesAccount = type === 'expense'
   const items = data.recurringExpenses.filter((r) => r.type === type)
   const today = todayStr()
 
@@ -22,6 +25,7 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [accountId, setAccountId] = useState('')
   const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly')
   const [interval, setInterval] = useState('1')
   const [startDate, setStartDate] = useState(today)
@@ -30,6 +34,7 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
   const [editName, setEditName] = useState('')
   const [editAmount, setEditAmount] = useState('')
   const [editCategoryId, setEditCategoryId] = useState('')
+  const [editAccountId, setEditAccountId] = useState('')
   const [editFrequency, setEditFrequency] = useState<RecurrenceFrequency>('monthly')
   const [editInterval, setEditInterval] = useState('1')
   const [editStartDate, setEditStartDate] = useState('')
@@ -47,18 +52,33 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
     .filter((row): row is { item: (typeof items)[number]; dueDate: string; moreOverdue: number } => row !== null)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
 
+  function resetForm() {
+    setName('')
+    setAmount('')
+    setCategoryId('')
+    setAccountId('')
+    setFrequency('monthly')
+    setInterval('1')
+    setStartDate(today)
+  }
+
   function handleAdd(e: FormEvent) {
     e.preventDefault()
     const amt = parseFloat(amount)
     const n = parseInt(interval, 10)
     if (!name.trim() || Number.isNaN(amt) || amt <= 0 || !categoryId || !startDate) return
-    addRecurringExpense({ name, amount: amt, categoryId, type, frequency, interval: Number.isNaN(n) ? 1 : n, startDate })
-    setName('')
-    setAmount('')
-    setCategoryId('')
-    setFrequency('monthly')
-    setInterval('1')
-    setStartDate(today)
+    if (usesAccount && !accountId) return
+    addRecurringExpense({
+      name,
+      amount: amt,
+      categoryId,
+      type,
+      accountId: usesAccount ? accountId : undefined,
+      frequency,
+      interval: Number.isNaN(n) ? 1 : n,
+      startDate,
+    })
+    resetForm()
   }
 
   function startEdit(itemId: string) {
@@ -68,6 +88,7 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
     setEditName(item.name)
     setEditAmount(String(item.amount))
     setEditCategoryId(item.categoryId)
+    setEditAccountId(item.accountId ?? '')
     setEditFrequency(item.frequency)
     setEditInterval(String(item.interval))
     setEditStartDate(item.startDate)
@@ -79,10 +100,12 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
     const amt = parseFloat(editAmount)
     const n = parseInt(editInterval, 10)
     if (!editName.trim() || Number.isNaN(amt) || amt <= 0 || !editCategoryId || !editStartDate) return
+    if (usesAccount && !editAccountId) return
     updateRecurringExpense(editingId, {
       name: editName,
       amount: amt,
       categoryId: editCategoryId,
+      accountId: usesAccount ? editAccountId : undefined,
       frequency: editFrequency,
       interval: Number.isNaN(n) ? 1 : n,
       startDate: editStartDate,
@@ -105,17 +128,23 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
     resolveRecurringOccurrence(itemId, dueDate, false)
   }
 
+  function logNextNow(item: (typeof items)[number]) {
+    resolveRecurringOccurrence(item.id, getNextOccurrence(item), true, item.amount)
+  }
+
   return (
     <div>
       <div className="space-y-2">
         {dueRows.map(({ item, dueDate, moreOverdue }) => {
           const catName = data.categories.find((c) => c.id === item.categoryId)?.name ?? 'Uncategorized'
+          const accName = item.accountId ? data.accounts.find((a) => a.id === item.accountId)?.name : undefined
           return (
             <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold/40 bg-panel-hover px-3 py-2">
               <div>
                 <div className="text-sm font-medium text-text">{item.name}</div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted">
                   <span className="rounded-full bg-panel px-2 py-0.5">{catName}</span>
+                  {accName && <span className="rounded-full bg-panel px-2 py-0.5">{accName}</span>}
                   <span>Due {dueDate}</span>
                   {moreOverdue > 0 && <span className="text-accent-red">+{moreOverdue} more overdue</span>}
                 </div>
@@ -152,7 +181,7 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
       </div>
 
       <button onClick={() => setManageOpen((o) => !o)} className="mt-3 text-xs text-gold hover:text-gold-dark">
-        {manageOpen ? 'Close manage list' : '+ Manage recurring expenses'}
+        {manageOpen ? 'Close manage list' : '+ Manage recurring items'}
       </button>
 
       {manageOpen && (
@@ -176,6 +205,20 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                 </option>
               ))}
             </select>
+            {usesAccount && (
+              <select
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
+              >
+                <option value="">Account…</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            )}
             <input
               type="number"
               step="0.01"
@@ -217,10 +260,14 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
               </button>
             </div>
           </form>
+          {usesAccount && accounts.length === 0 && (
+            <p className="mb-3 text-xs text-muted">No accounts yet — add one in the Accounts card below before creating a recurring expense.</p>
+          )}
 
           <div className="space-y-2">
-            {items.map((item) =>
-              editingId === item.id ? (
+            {items.map((item) => {
+              const accName = item.accountId ? data.accounts.find((a) => a.id === item.accountId)?.name : undefined
+              return editingId === item.id ? (
                 <form
                   key={item.id}
                   onSubmit={saveEdit}
@@ -243,6 +290,20 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                       </option>
                     ))}
                   </select>
+                  {usesAccount && (
+                    <select
+                      value={editAccountId}
+                      onChange={(e) => setEditAccountId(e.target.value)}
+                      className="rounded border border-line bg-transparent text-xs"
+                    >
+                      <option value="">Account…</option>
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <input
                     type="number"
                     step="0.01"
@@ -289,10 +350,16 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                       {item.name} ({formatMoney(item.amount)})
                     </span>
                     <div className="mt-0.5 text-[10px] text-muted">
-                      {describeSchedule(item)} · {item.paused ? 'Paused' : `Next: ${getNextOccurrence(item)}`}
+                      {describeSchedule(item)}
+                      {accName ? ` · ${accName}` : ''} · {item.paused ? 'Paused' : `Next: ${getNextOccurrence(item)}`}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
+                    {!item.paused && (
+                      <button onClick={() => logNextNow(item)} className="text-muted hover:text-gold" title="Log the next occurrence today, ahead of schedule">
+                        Log now
+                      </button>
+                    )}
                     <button onClick={() => toggleRecurringExpensePaused(item.id)} className="text-muted hover:text-gold">
                       {item.paused ? 'Resume' : 'Pause'}
                     </button>
@@ -301,9 +368,9 @@ export default function RecurringExpensePanel({ type }: { type: EntryType }) {
                     </button>
                   </div>
                 </div>
-              ),
-            )}
-            {items.length === 0 && <p className="text-sm text-muted">No recurring expenses yet — add one above.</p>}
+              )
+            })}
+            {items.length === 0 && <p className="text-sm text-muted">No recurring items yet — add one above.</p>}
           </div>
         </div>
       )}

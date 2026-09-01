@@ -16,12 +16,18 @@ export interface Keyword {
   type: EntryType
 }
 
-export interface FixedItem {
+/**
+ * A cash-flow account (checking, credit card, cash, ...) that expenses are logged against.
+ * Income is tracked by category instead, not by account.
+ */
+export interface Account {
   id: string
   name: string
-  amount: number
-  categoryId: string
-  type: EntryType
+  /** Transactions logged here count toward the "Investment" bucket on the Cash Flow page instead of "Expenses". */
+  isInvestment?: boolean
+  /** Hidden accounts no longer appear as pickable options, but past entries keep referencing them by id/name. */
+  archived?: boolean
+  createdAt: number
 }
 
 export type RecurrenceFrequency = 'weekly' | 'monthly' | 'yearly'
@@ -32,6 +38,8 @@ export interface RecurringExpense {
   amount: number
   categoryId: string
   type: EntryType
+  /** Which account confirmed occurrences post to. Expense-type only — income isn't tracked by account. */
+  accountId?: string
   frequency: RecurrenceFrequency
   /** Occurs every N frequency units, e.g. interval 2 + frequency 'monthly' = every 2 months. */
   interval: number
@@ -54,6 +62,10 @@ export interface Transaction {
   createdAt: number
   /** Only set when logged with a future date in advance; false until the user reviews/confirms it. */
   confirmed?: boolean
+  /** Expense-type only. Absent means "Unassigned" — shown in its own bucket until reassigned. */
+  accountId?: string
+  /** Set when this transaction was created by confirming a recurring occurrence as incurred. */
+  recurringExpenseId?: string
 }
 
 export interface InvestmentAccount {
@@ -83,7 +95,7 @@ export interface AppSettings {
 export interface AppData {
   categories: Category[]
   keywords: Keyword[]
-  fixedItems: FixedItem[]
+  accounts: Account[]
   recurringExpenses: RecurringExpense[]
   transactions: Transaction[]
   investmentAccounts: InvestmentAccount[]

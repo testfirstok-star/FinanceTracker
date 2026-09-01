@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
+  Account,
   AppData,
   AppSettings,
   Category,
   EntryType,
-  FixedItem,
   InvestmentAccount,
   InvestmentEntryType,
   InvestmentTransaction,
@@ -33,10 +33,12 @@ interface DataContextValue {
   updateKeyword: (id: string, keyword: string, categoryId: string) => void
   removeKeyword: (id: string) => void
 
-  // fixed items
-  addFixedItem: (name: string, amount: number, categoryId: string, type: EntryType) => void
-  updateFixedItem: (id: string, name: string, amount: number, categoryId: string) => void
-  removeFixedItem: (id: string) => void
+  // accounts (expense cash-flow accounts — income is tracked by category instead)
+  addAccount: (name: string, isInvestment: boolean) => Account
+  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'isInvestment'>>) => void
+  archiveAccount: (id: string) => void
+  restoreAccount: (id: string) => void
+  activeAccounts: () => Account[]
 
   // recurring expenses
   addRecurringExpense: (input: {
@@ -44,13 +46,14 @@ interface DataContextValue {
     amount: number
     categoryId: string
     type: EntryType
+    accountId?: string
     frequency: RecurrenceFrequency
     interval: number
     startDate: string
   }) => void
   updateRecurringExpense: (
     id: string,
-    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate'>>,
+    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'accountId' | 'frequency' | 'interval' | 'startDate'>>,
   ) => void
   removeRecurringExpense: (id: string) => void
   toggleRecurringExpensePaused: (id: string) => void
@@ -58,8 +61,18 @@ interface DataContextValue {
   resolveRecurringOccurrence: (id: string, occurrenceDate: string, logged: boolean, amount?: number) => void
 
   // transactions
-  addTransaction: (input: { description: string; categoryId: string; amount: number; type: EntryType; date?: string }) => Transaction
-  updateTransaction: (id: string, patch: Partial<Pick<Transaction, 'date' | 'description' | 'categoryId' | 'categoryName' | 'amount' | 'confirmed'>>) => void
+  addTransaction: (input: {
+    description: string
+    categoryId: string
+    amount: number
+    type: EntryType
+    date?: string
+    accountId?: string
+  }) => Transaction
+  updateTransaction: (
+    id: string,
+    patch: Partial<Pick<Transaction, 'date' | 'description' | 'categoryId' | 'categoryName' | 'amount' | 'confirmed' | 'accountId'>>,
+  ) => void
   removeTransaction: (id: string) => void
 
   // investments
@@ -87,7 +100,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData({
           categories: next.categories ?? [],
           keywords: next.keywords ?? [],
-          fixedItems: next.fixedItems ?? [],
+          accounts: next.accounts ?? [],
           recurringExpenses: next.recurringExpenses ?? [],
           transactions: next.transactions ?? [],
           investmentAccounts: next.investmentAccounts ?? [],
@@ -138,27 +151,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData((d) => ({ ...d, keywords: d.keywords.filter((k) => k.id !== id) }))
       },
 
-      addFixedItem: (name, amount, categoryId, type) => {
-        const item: FixedItem = { id: newId(), name: name.trim(), amount, categoryId, type }
-        setData((d) => ({ ...d, fixedItems: [...d.fixedItems, item] }))
+      addAccount: (name, isInvestment) => {
+        const acc: Account = { id: newId(), name: name.trim(), isInvestment: isInvestment || undefined, createdAt: Date.now() }
+        setData((d) => ({ ...d, accounts: [...d.accounts, acc] }))
+        return acc
       },
-      updateFixedItem: (id, name, amount, categoryId) => {
+      updateAccount: (id, patch) => {
         setData((d) => ({
           ...d,
-          fixedItems: d.fixedItems.map((f) => (f.id === id ? { ...f, name: name.trim(), amount, categoryId } : f)),
+          accounts: d.accounts.map((a) =>
+            a.id === id ? { ...a, ...patch, ...(patch.name !== undefined ? { name: patch.name.trim() } : {}) } : a,
+          ),
         }))
       },
-      removeFixedItem: (id) => {
-        setData((d) => ({ ...d, fixedItems: d.fixedItems.filter((f) => f.id !== id) }))
+      archiveAccount: (id) => {
+        setData((d) => ({ ...d, accounts: d.accounts.map((a) => (a.id === id ? { ...a, archived: true } : a)) }))
       },
+      restoreAccount: (id) => {
+        setData((d) => ({ ...d, accounts: d.accounts.map((a) => (a.id === id ? { ...a, archived: false } : a)) }))
+      },
+      activeAccounts: () => data.accounts.filter((a) => !a.archived),
 
-      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate }) => {
+      addRecurringExpense: ({ name, amount, categoryId, type, accountId, frequency, interval, startDate }) => {
         const item: RecurringExpense = {
           id: newId(),
           name: name.trim(),
           amount,
           categoryId,
           type,
+          accountId,
           frequency,
           interval: Math.max(1, Math.round(interval) || 1),
           startDate,
@@ -209,6 +230,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           amount: amount ?? item.amount,
           type: item.type,
           createdAt: Date.now(),
+          accountId: item.accountId,
+          recurringExpenseId: item.id,
         }
         setData((d) => ({
           ...d,
@@ -229,6 +252,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           amount: input.amount,
           type: input.type,
           createdAt: Date.now(),
+          accountId: input.accountId,
           ...(date > todayStr() ? { confirmed: false } : {}),
         }
         setData((d) => ({ ...d, transactions: [tx, ...d.transactions] }))

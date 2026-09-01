@@ -1,29 +1,61 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Card from '../components/Card'
 import Collapsible from '../components/Collapsible'
 import TransactionForm from '../components/TransactionForm'
-import TransactionTable from '../components/TransactionTable'
+import GroupedTransactions from '../components/GroupedTransactions'
 import CategoryManager from '../components/CategoryManager'
+import AccountManager from '../components/AccountManager'
+import RecurringExpensePanel from '../components/RecurringExpensePanel'
 import PageTitle from '../components/PageTitle'
+import PeriodControls from '../components/PeriodControls'
+import StatTile from '../components/StatTile'
+import { usePeriod } from '../hooks/usePeriod'
 import { useData } from '../hooks/DataContext'
+import { formatMoney } from '../lib/format'
 
 export default function ExpensesPage() {
   const { data, updateSettings } = useData()
+  const period = usePeriod()
   const [weekdayLimit, setWeekdayLimit] = useState(String(data.settings.weekdayExpenseLimit ?? ''))
   const [weekendLimit, setWeekendLimit] = useState(String(data.settings.weekendExpenseLimit ?? ''))
+
+  const { total, recurringTotal, oneOffTotal } = useMemo(() => {
+    const inRange = data.transactions.filter((t) => t.type === 'expense' && t.date >= period.start && t.date <= period.end)
+    const total = inRange.reduce((s, t) => s + t.amount, 0)
+    const recurringTotal = inRange.filter((t) => t.recurringExpenseId).reduce((s, t) => s + t.amount, 0)
+    return { total, recurringTotal, oneOffTotal: total - recurringTotal }
+  }, [data.transactions, period.start, period.end])
 
   return (
     <div className="space-y-6">
       <PageTitle>Expenses</PageTitle>
+
+      <PeriodControls period={period} />
+
+      <Card title={`Summary — ${period.label}`}>
+        <div className="grid grid-cols-3 gap-2">
+          <StatTile label="Total" value={formatMoney(total)} tone="bad" />
+          <StatTile label="Recurring" value={formatMoney(recurringTotal)} />
+          <StatTile label="One-off" value={formatMoney(oneOffTotal)} />
+        </div>
+      </Card>
+
+      <Card title="Recurring expenses">
+        <RecurringExpensePanel type="expense" />
+      </Card>
 
       <Card title="Log an expense">
         <TransactionForm type="expense" />
       </Card>
 
       <Card>
-        <Collapsible title="Logged expenses" defaultOpen>
-          <TransactionTable type="expense" />
+        <Collapsible title="By account" defaultOpen>
+          <GroupedTransactions type="expense" start={period.start} end={period.end} groupBy="account" />
         </Collapsible>
+      </Card>
+
+      <Card title="Accounts">
+        <AccountManager />
       </Card>
 
       <Card title="Expense categories">
