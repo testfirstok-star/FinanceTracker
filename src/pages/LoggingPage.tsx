@@ -3,6 +3,8 @@ import Card from '../components/Card'
 import ChatLogger from '../components/ChatLogger'
 import KeywordManager from '../components/KeywordManager'
 import TransactionForm from '../components/TransactionForm'
+import RecurringDueChecklist from '../components/RecurringDueChecklist'
+import RecurringManageList from '../components/RecurringManageList'
 import Collapsible from '../components/Collapsible'
 import PageTitle from '../components/PageTitle'
 import type { EntryType } from '../types'
@@ -39,6 +41,14 @@ export default function LoggingPage() {
           </button>
         </div>
         <TransactionForm type={logType} />
+      </Card>
+
+      <Card title="Recurring expenses">
+        <RecurringDueChecklist type="expense" />
+      </Card>
+
+      <Card title="Manage recurring expenses">
+        <RecurringManageList type="expense" />
       </Card>
     </div>
   )

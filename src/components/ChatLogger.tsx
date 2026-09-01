@@ -18,15 +18,17 @@ interface PendingEntry {
 }
 
 export default function ChatLogger() {
-  const { data, addTransaction, addKeyword, activeCategories } = useData()
+  const { data, addTransaction, addKeyword, activeCategories, activeAccounts } = useData()
   const [input, setInput] = useState('')
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [pending, setPending] = useState<PendingEntry | null>(null)
   const [pendingType, setPendingType] = useState<EntryType>('expense')
   const [pendingCategoryId, setPendingCategoryId] = useState('')
   const [rememberKeyword, setRememberKeyword] = useState(true)
+  const [accountId, setAccountId] = useState('')
 
   const categories = activeCategories(pendingType)
+  const accounts = activeAccounts()
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -42,7 +44,13 @@ export default function ChatLogger() {
 
     if (result.matched && result.categoryId) {
       const catName = data.categories.find((c) => c.id === result.categoryId)?.name ?? 'Uncategorized'
-      addTransaction({ description: result.description, categoryId: result.categoryId, amount: result.amount, type: result.type })
+      addTransaction({
+        description: result.description,
+        categoryId: result.categoryId,
+        amount: result.amount,
+        type: result.type,
+        accountId: result.type === 'expense' ? accountId || undefined : undefined,
+      })
       setFeed((f) => [
         { id: crypto.randomUUID(), text, result: `Logged ${formatMoney(result.amount)} → ${catName} (${result.type})`, isError: false },
         ...f,
@@ -58,7 +66,13 @@ export default function ChatLogger() {
 
   function confirmPending() {
     if (!pending || !pendingCategoryId) return
-    addTransaction({ description: pending.description, categoryId: pendingCategoryId, amount: pending.amount, type: pendingType })
+    addTransaction({
+      description: pending.description,
+      categoryId: pendingCategoryId,
+      amount: pending.amount,
+      type: pendingType,
+      accountId: pendingType === 'expense' ? accountId || undefined : undefined,
+    })
     const catName = data.categories.find((c) => c.id === pendingCategoryId)?.name ?? 'Uncategorized'
 
     if (rememberKeyword) {
@@ -77,17 +91,34 @@ export default function ChatLogger() {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder='Try "lunch 12" or "salary 3000"'
-          className="flex-1 rounded-md border border-line px-3 py-2 text-sm bg-panel-hover"
+          className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-sm bg-panel-hover"
         />
         <button type="submit" className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold-dark">
           Send
         </button>
       </form>
+      {accounts.length > 0 && (
+        <label className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+          Account for expenses:
+          <select
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="rounded-md border border-line bg-panel-hover px-2 py-1 text-xs"
+          >
+            <option value="">Unassigned</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {pending && (
         <div className="mt-3 rounded-md border border-gold/40 bg-gold/10 p-3 text-sm">

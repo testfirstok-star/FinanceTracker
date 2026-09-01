@@ -23,8 +23,12 @@ export interface Keyword {
 export interface Account {
   id: string
   name: string
-  /** Transactions logged here count toward the "Investment" bucket on the Cash Flow page instead of "Expenses". */
-  isInvestment?: boolean
+  /**
+   * Free-form, user-extensible labels (e.g. "bank", "recur", "invest") used to filter the Expenses
+   * summary. The tags "invest" and "recur" carry built-in meaning — see lib/tags.ts — accounts
+   * carrying either are treated as tracking-only and excluded from Expenses/Savings totals by default.
+   */
+  tags?: string[]
   /** Hidden accounts no longer appear as pickable options, but past entries keep referencing them by id/name. */
   archived?: boolean
   createdAt: number
@@ -38,8 +42,6 @@ export interface RecurringExpense {
   amount: number
   categoryId: string
   type: EntryType
-  /** Which account confirmed occurrences post to. Expense-type only — income isn't tracked by account. */
-  accountId?: string
   frequency: RecurrenceFrequency
   /** Occurs every N frequency units, e.g. interval 2 + frequency 'monthly' = every 2 months. */
   interval: number

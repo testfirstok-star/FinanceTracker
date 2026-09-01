@@ -1,4 +1,4 @@
-import type { AppData, Category, Keyword, RecurringExpense } from '../types'
+import type { Account, AppData, Category, Keyword, RecurringExpense } from '../types'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
 
@@ -94,6 +94,30 @@ interface LegacyFixedItem {
   type: 'expense' | 'income'
 }
 
+/** One-time migration: the old boolean isInvestment flag was replaced by a free-form tags list. */
+function migrateAccountTags(accounts: Account[]): Account[] {
+  return accounts.map((a) => {
+    const legacy = a as Account & { isInvestment?: boolean }
+    if (legacy.isInvestment === undefined) return a
+    const tags = legacy.tags ?? []
+    const nextTags = legacy.isInvestment && !tags.includes('invest') ? [...tags, 'invest'] : tags
+    const { isInvestment, ...rest } = legacy
+    void isInvestment
+    return { ...rest, tags: nextTags }
+  })
+}
+
+/** One-time migration: recurring items no longer carry a manual accountId — confirmed occurrences auto-post to the "recur"-tagged account. */
+function migrateRecurringAccountId(items: RecurringExpense[]): RecurringExpense[] {
+  return items.map((r) => {
+    const legacy = r as RecurringExpense & { accountId?: string }
+    if (legacy.accountId === undefined) return r
+    const { accountId, ...rest } = legacy
+    void accountId
+    return rest
+  })
+}
+
 /** One-time migration: the old "Fixed items" panel was replaced by Recurring items with a schedule. */
 function migrateFixedItems(legacyFixedItems: unknown, existingRecurring: RecurringExpense[]): RecurringExpense[] {
   if (!Array.isArray(legacyFixedItems) || legacyFixedItems.length === 0) return existingRecurring
@@ -121,8 +145,8 @@ export function loadData(): AppData {
     return {
       categories: parsed.categories ?? [],
       keywords: parsed.keywords ?? [],
-      accounts: parsed.accounts ?? [],
-      recurringExpenses: migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? []),
+      accounts: migrateAccountTags(parsed.accounts ?? []),
+      recurringExpenses: migrateRecurringAccountId(migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? [])),
       transactions: parsed.transactions ?? [],
       investmentAccounts: parsed.investmentAccounts ?? [],
       investmentTransactions: parsed.investmentTransactions ?? [],

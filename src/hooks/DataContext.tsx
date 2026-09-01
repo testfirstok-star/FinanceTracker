@@ -15,6 +15,7 @@ import type {
 } from '../types'
 import { loadData, newId, saveData } from '../storage/db'
 import { todayStr } from '../lib/format'
+import { findFirstAccountWithTag } from '../lib/tags'
 
 interface DataContextValue {
   data: AppData
@@ -34,8 +35,8 @@ interface DataContextValue {
   removeKeyword: (id: string) => void
 
   // accounts (expense cash-flow accounts — income is tracked by category instead)
-  addAccount: (name: string, isInvestment: boolean) => Account
-  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'isInvestment'>>) => void
+  addAccount: (name: string, tags: string[]) => Account
+  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'tags'>>) => void
   archiveAccount: (id: string) => void
   restoreAccount: (id: string) => void
   activeAccounts: () => Account[]
@@ -46,14 +47,13 @@ interface DataContextValue {
     amount: number
     categoryId: string
     type: EntryType
-    accountId?: string
     frequency: RecurrenceFrequency
     interval: number
     startDate: string
   }) => void
   updateRecurringExpense: (
     id: string,
-    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'accountId' | 'frequency' | 'interval' | 'startDate'>>,
+    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate'>>,
   ) => void
   removeRecurringExpense: (id: string) => void
   toggleRecurringExpensePaused: (id: string) => void
@@ -151,8 +151,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData((d) => ({ ...d, keywords: d.keywords.filter((k) => k.id !== id) }))
       },
 
-      addAccount: (name, isInvestment) => {
-        const acc: Account = { id: newId(), name: name.trim(), isInvestment: isInvestment || undefined, createdAt: Date.now() }
+      addAccount: (name, tags) => {
+        const acc: Account = { id: newId(), name: name.trim(), tags: tags.length ? tags : undefined, createdAt: Date.now() }
         setData((d) => ({ ...d, accounts: [...d.accounts, acc] }))
         return acc
       },
@@ -172,14 +172,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
       activeAccounts: () => data.accounts.filter((a) => !a.archived),
 
-      addRecurringExpense: ({ name, amount, categoryId, type, accountId, frequency, interval, startDate }) => {
+      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate }) => {
         const item: RecurringExpense = {
           id: newId(),
           name: name.trim(),
           amount,
           categoryId,
           type,
-          accountId,
           frequency,
           interval: Math.max(1, Math.round(interval) || 1),
           startDate,
@@ -221,6 +220,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           return
         }
         const category = data.categories.find((c) => c.id === item.categoryId)
+        // Confirmed recurring occurrences auto-post to the "recur"-tagged account, if one exists —
+        // same treatment as Investment, so a subscription that's really part of a credit card bill
+        // logged separately doesn't get counted twice in Expenses.
+        const recurAccount = item.type === 'expense' ? findFirstAccountWithTag(data.accounts, 'recur') : undefined
         const tx: Transaction = {
           id: newId(),
           date: occurrenceDate,
@@ -230,7 +233,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           amount: amount ?? item.amount,
           type: item.type,
           createdAt: Date.now(),
-          accountId: item.accountId,
+          accountId: recurAccount?.id,
           recurringExpenseId: item.id,
         }
         setData((d) => ({

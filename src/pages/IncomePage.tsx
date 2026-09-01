@@ -3,7 +3,8 @@ import Card from '../components/Card'
 import Collapsible from '../components/Collapsible'
 import GroupedTransactions from '../components/GroupedTransactions'
 import CategoryManager from '../components/CategoryManager'
-import RecurringExpensePanel from '../components/RecurringExpensePanel'
+import RecurringDueChecklist from '../components/RecurringDueChecklist'
+import RecurringManageList from '../components/RecurringManageList'
 import PageTitle from '../components/PageTitle'
 import PeriodControls from '../components/PeriodControls'
 import StatTile from '../components/StatTile'
@@ -36,7 +37,12 @@ export default function IncomePage() {
       </Card>
 
       <Card title="Recurring income">
-        <RecurringExpensePanel type="income" />
+        <RecurringDueChecklist type="income" />
+        <div className="mt-3">
+          <Collapsible title="Manage recurring income">
+            <RecurringManageList type="income" />
+          </Collapsible>
+        </div>
       </Card>
 
       <Card>
