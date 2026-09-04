@@ -3,7 +3,7 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurrenceFrequency, RecurringExpense } from '../types'
 import { formatMoney, todayStr } from '../lib/format'
 import { describeSchedule, getNextOccurrence } from '../lib/recurrence'
-import { RECURRING_TAG_SUGGESTIONS } from '../lib/tags'
+import { RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
 
 function normalizeTag(raw: string): string {
   return raw.trim().toLowerCase()
@@ -59,12 +59,20 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
     setNewTags((t) => [...t, tag])
   }
 
+  function selectCategory(id: string) {
+    setCategoryId(id)
+    const catName = categories.find((c) => c.id === id)?.name
+    setNewTags((cur) => withCategoryDerivedTag(catName, cur))
+  }
+
   function handleAdd(e: FormEvent) {
     e.preventDefault()
     const amt = parseFloat(amount)
     const n = parseInt(interval, 10)
     if (!name.trim() || Number.isNaN(amt) || amt <= 0 || !categoryId || !startDate) return
-    addRecurringExpense({ name, amount: amt, categoryId, type, frequency, interval: Number.isNaN(n) ? 1 : n, startDate, tags: newTags })
+    const catName = categories.find((c) => c.id === categoryId)?.name
+    const tags = withCategoryDerivedTag(catName, newTags)
+    addRecurringExpense({ name, amount: amt, categoryId, type, frequency, interval: Number.isNaN(n) ? 1 : n, startDate, tags })
     resetForm()
   }
 
@@ -104,6 +112,9 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
     const amt = parseFloat(editAmount)
     const n = parseInt(editInterval, 10)
     if (!editName.trim() || Number.isNaN(amt) || amt <= 0 || !editCategoryId || !editStartDate) return
+    const currentItem = items.find((i) => i.id === editingId)
+    const catName = categories.find((c) => c.id === editCategoryId)?.name
+    const tags = withCategoryDerivedTag(catName, currentItem?.tags ?? [])
     updateRecurringExpense(editingId, {
       name: editName,
       amount: amt,
@@ -111,6 +122,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
       frequency: editFrequency,
       interval: Number.isNaN(n) ? 1 : n,
       startDate: editStartDate,
+      tags,
     })
     setEditingId(null)
   }
@@ -130,7 +142,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
         />
         <select
           value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
+          onChange={(e) => selectCategory(e.target.value)}
           className="rounded-md border border-line px-2 py-1 text-sm bg-panel-hover"
         >
           <option value="">Category…</option>

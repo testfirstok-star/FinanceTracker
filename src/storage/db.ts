@@ -1,4 +1,5 @@
 import type { Account, AppData, Category, Keyword, RecurringExpense } from '../types'
+import { matchingSuggestionForCategory } from '../lib/tags'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
 
@@ -139,16 +140,34 @@ function migrateFixedItems(legacyFixedItems: unknown, existingRecurring: Recurri
   return [...existingRecurring, ...migrated]
 }
 
+/**
+ * Backfill: a recurring item whose category name matches a known tag suggestion (e.g. "Insurance")
+ * gets that tag if it doesn't already have it — so picking the category alone is enough, past or
+ * future. Never removes a tag, so a manual override still sticks.
+ */
+function syncRecurringCategoryTags(items: RecurringExpense[], categories: Category[]): RecurringExpense[] {
+  return items.map((item) => {
+    const catName = categories.find((c) => c.id === item.categoryId)?.name
+    const derived = catName ? matchingSuggestionForCategory(catName) : undefined
+    if (!derived) return item
+    const currentTags = item.tags ?? []
+    if (currentTags.some((t) => t.toLowerCase() === derived)) return item
+    return { ...item, tags: [...currentTags, derived] }
+  })
+}
+
 export function loadData(): AppData {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return defaultData()
   try {
     const parsed = JSON.parse(raw) as Partial<AppData> & { fixedItems?: unknown }
+    const categories = parsed.categories ?? []
+    const recurringExpenses = migrateRecurringAccountId(migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? []))
     return {
-      categories: parsed.categories ?? [],
+      categories,
       keywords: parsed.keywords ?? [],
       accounts: migrateAccountTags(parsed.accounts ?? []),
-      recurringExpenses: migrateRecurringAccountId(migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? [])),
+      recurringExpenses: syncRecurringCategoryTags(recurringExpenses, categories),
       transactions: parsed.transactions ?? [],
       investmentAccounts: parsed.investmentAccounts ?? [],
       investmentTransactions: parsed.investmentTransactions ?? [],
