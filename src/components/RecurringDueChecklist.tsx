@@ -3,11 +3,11 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurringExpense } from '../types'
 import { daysInMonth, monthKey, todayStr } from '../lib/format'
 import { getDueOccurrences } from '../lib/recurrence'
-import { findFirstAccountWithTag } from '../lib/tags'
+import { findFirstAccountWithTag, hasTag } from '../lib/tags'
 
-export default function RecurringDueChecklist({ type }: { type: EntryType }) {
+export default function RecurringDueChecklist({ type, filterTag }: { type: EntryType; filterTag?: string }) {
   const { data, resolveRecurringOccurrence } = useData()
-  const items = data.recurringExpenses.filter((r) => r.type === type)
+  const items = data.recurringExpenses.filter((r) => r.type === type && (!filterTag || hasTag(r, filterTag)))
   const today = todayStr()
   // Show everything expected this month from the 1st, not just what's strictly due as of today —
   // so the checklist reads as "what to expect this month," confirmable any time during the month.
@@ -62,7 +62,16 @@ export default function RecurringDueChecklist({ type }: { type: EntryType }) {
           return (
             <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold/40 bg-panel-hover px-3 py-2">
               <div>
-                <div className="text-sm font-medium text-text">{item.name}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-medium text-text">{item.name}</span>
+                  {(item.tags ?? [])
+                    .filter((t) => t !== filterTag)
+                    .map((t) => (
+                      <span key={t} className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] text-gold">
+                        {t}
+                      </span>
+                    ))}
+                </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted">
                   <span className="rounded-full bg-panel px-2 py-0.5">{catName}</span>
                   <span>{dueDate <= today ? 'Due' : 'Expected'} {dueDate}</span>
@@ -97,7 +106,11 @@ export default function RecurringDueChecklist({ type }: { type: EntryType }) {
             </div>
           )
         })}
-        {dueRows.length === 0 && <p className="text-sm text-muted">Nothing expected this month — you're all caught up.</p>}
+        {dueRows.length === 0 && (
+          <p className="text-sm text-muted">
+            {filterTag ? `No ${filterTag} due this month` : 'Nothing expected this month'} — you're all caught up.
+          </p>
+        )}
       </div>
     </div>
   )

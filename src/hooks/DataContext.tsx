@@ -53,10 +53,11 @@ interface DataContextValue {
     frequency: RecurrenceFrequency
     interval: number
     startDate: string
+    tags?: string[]
   }) => void
   updateRecurringExpense: (
     id: string,
-    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate'>>,
+    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate' | 'tags'>>,
   ) => void
   removeRecurringExpense: (id: string) => void
   toggleRecurringExpensePaused: (id: string) => void
@@ -186,7 +187,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
       activeAccounts: () => data.accounts.filter((a) => !a.archived),
 
-      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate }) => {
+      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate, tags }) => {
         const item: RecurringExpense = {
           id: newId(),
           name: name.trim(),
@@ -196,6 +197,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           frequency,
           interval: Math.max(1, Math.round(interval) || 1),
           startDate,
+          tags: tags && tags.length ? tags : undefined,
         }
         setData((d) => ({ ...d, recurringExpenses: [...d.recurringExpenses, item] }))
       },

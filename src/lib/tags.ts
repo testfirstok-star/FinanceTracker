@@ -1,7 +1,15 @@
 import type { Account } from '../types'
 
-/** Tag suggestions offered in the UI — the user can add any free-form tag beyond these. */
+/** Anything with an optional tags array — Account and RecurringExpense both qualify. */
+interface Tagged {
+  tags?: string[]
+}
+
+/** Tag suggestions offered on the Accounts UI — the user can add any free-form tag beyond these. */
 export const SUGGESTED_TAGS = ['bank', 'recur', 'invest']
+
+/** Tag suggestions offered on the Recurring items UI. */
+export const RECURRING_TAG_SUGGESTIONS = ['insurance']
 
 /**
  * Tags with built-in meaning: an account carrying either is "tracking-only" — money logged there
@@ -12,11 +20,11 @@ export const SUGGESTED_TAGS = ['bank', 'recur', 'invest']
  */
 export const TRACKING_TAGS = ['invest', 'recur'] as const
 
-export function hasTag(account: Pick<Account, 'tags'>, tag: string): boolean {
-  return (account.tags ?? []).some((t) => t.toLowerCase() === tag.toLowerCase())
+export function hasTag(item: Tagged, tag: string): boolean {
+  return (item.tags ?? []).some((t) => t.toLowerCase() === tag.toLowerCase())
 }
 
-export function isTrackingOnly(account: Pick<Account, 'tags'>): boolean {
+export function isTrackingOnly(account: Tagged): boolean {
   return TRACKING_TAGS.some((t) => hasTag(account, t))
 }
 

@@ -51,6 +51,8 @@ export interface RecurringExpense {
   lastResolvedDate?: string
   /** Paused items are excluded from the due checklist but keep their schedule for when resumed. */
   paused?: boolean
+  /** Free-form labels (e.g. "insurance") used to pull a subset of recurring items into their own dedicated checklist. */
+  tags?: string[]
 }
 
 export interface Transaction {

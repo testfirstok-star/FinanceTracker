@@ -43,6 +43,11 @@ export default function LoggingPage() {
         <TransactionForm type={logType} />
       </Card>
 
+      <Card title="Insurance">
+        <p className="mb-2 text-xs text-muted">Premiums you can't afford to miss — also included in Recurring expenses below.</p>
+        <RecurringDueChecklist type="expense" filterTag="insurance" />
+      </Card>
+
       <Card title="Recurring expenses">
         <RecurringDueChecklist type="expense" />
       </Card>
