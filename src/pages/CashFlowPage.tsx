@@ -12,19 +12,24 @@ export default function CashFlowPage() {
   const period = usePeriod()
   const { data } = useData()
 
-  const { income, expenses, investment, recurringTracking, netLoanOut, savings } = useMemo(() => {
+  const { income, expenses, investment, excludedTracking, netLoanOut, savings } = useMemo(() => {
     const inRange = data.transactions.filter((t) => t.date >= period.start && t.date <= period.end)
     const income = inRange.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
 
     const investmentAccountIds = new Set(data.accounts.filter((a) => hasTag(a, 'invest')).map((a) => a.id))
-    const recurAccountIds = new Set(data.accounts.filter((a) => hasTag(a, 'recur')).map((a) => a.id))
+    // Accounts explicitly switched off Cash Flow (and not already counted toward Investment above).
+    const excludedAccountIds = new Set(
+      data.accounts.filter((a) => a.excludeFromCashFlow && !investmentAccountIds.has(a.id)).map((a) => a.id),
+    )
     const expenseTx = inRange.filter((t) => t.type === 'expense')
     const investmentFromAccounts = expenseTx
       .filter((t) => t.accountId && investmentAccountIds.has(t.accountId))
       .reduce((s, t) => s + t.amount, 0)
-    const recurringTracking = expenseTx.filter((t) => t.accountId && recurAccountIds.has(t.accountId)).reduce((s, t) => s + t.amount, 0)
+    const excludedTracking = expenseTx
+      .filter((t) => t.accountId && excludedAccountIds.has(t.accountId))
+      .reduce((s, t) => s + t.amount, 0)
     const expenses = expenseTx
-      .filter((t) => !t.accountId || (!investmentAccountIds.has(t.accountId) && !recurAccountIds.has(t.accountId)))
+      .filter((t) => !t.accountId || (!investmentAccountIds.has(t.accountId) && !excludedAccountIds.has(t.accountId)))
       .reduce((s, t) => s + t.amount, 0)
 
     // Also pull in what's actually logged on the Investments page — deposits/withdrawals are real money
@@ -43,10 +48,11 @@ export default function CashFlowPage() {
     const loansRepaid = loanTxInRange.filter((t) => t.type === 'repaid').reduce((s, t) => s + t.amount, 0)
     const netLoanOut = loansGiven - loansRepaid
 
-    // Recurring-tagged spend is tracked separately (often a duplicate of a bill you log elsewhere), so it
-    // doesn't factor into Savings — only real Expenses, Investment, and net Loans outflows do.
+    // Spend on accounts explicitly excluded from Cash Flow is tracked separately (often a duplicate of a
+    // bill you log elsewhere), so it doesn't factor into Savings — only real Expenses, Investment, and net
+    // Loans outflows do.
     const savings = income - expenses - investment - netLoanOut
-    return { income, expenses, investment, recurringTracking, netLoanOut, savings }
+    return { income, expenses, investment, excludedTracking, netLoanOut, savings }
   }, [data.transactions, data.accounts, data.investmentTransactions, data.loanTransactions, period.start, period.end])
 
   // Denominator that always fits the bar to 100%, whether or not you overspent this period.
@@ -99,10 +105,11 @@ export default function CashFlowPage() {
           <p className="text-sm text-muted">No income logged for this period yet.</p>
         )}
 
-        {recurringTracking > 0 && (
+        {excludedTracking > 0 && (
           <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
-            Recurring subscriptions tracked separately: <span className="font-figure text-text2">{formatMoney(recurringTracking)}</span> — not
-            counted in Expenses or Savings above (usually already part of a bill you log elsewhere).
+            Tracked separately: <span className="font-figure text-text2">{formatMoney(excludedTracking)}</span> — not
+            counted in Expenses or Savings above (accounts with "Log into Cash Flow" turned off, usually already part of a bill you
+            log elsewhere).
           </p>
         )}
       </Card>

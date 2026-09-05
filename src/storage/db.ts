@@ -1,5 +1,5 @@
 import type { Account, AppData, Category, Keyword, RecurringExpense } from '../types'
-import { matchingSuggestionForCategory } from '../lib/tags'
+import { hasTag, matchingSuggestionForCategory } from '../lib/tags'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
 
@@ -110,15 +110,15 @@ function migrateAccountTags(accounts: Account[]): Account[] {
   })
 }
 
-/** One-time migration: recurring items no longer carry a manual accountId — confirmed occurrences auto-post to the "recur"-tagged account. */
-function migrateRecurringAccountId(items: RecurringExpense[]): RecurringExpense[] {
-  return items.map((r) => {
-    const legacy = r as RecurringExpense & { accountId?: string }
-    if (legacy.accountId === undefined) return r
-    const { accountId, ...rest } = legacy
-    void accountId
-    return rest
-  })
+/**
+ * One-time migration: accounts tagged "recur" used to be unconditionally excluded from Cash Flow.
+ * That's now an explicit, independent switch — default it on for accounts that were relying on the
+ * old implicit behavior, but only if the user hasn't already made an explicit choice either way.
+ */
+function migrateRecurAccountExclusion(accounts: Account[]): Account[] {
+  return accounts.map((a) =>
+    a.excludeFromCashFlow === undefined && hasTag(a, 'recur') ? { ...a, excludeFromCashFlow: true } : a,
+  )
 }
 
 /** One-time migration: the old "Fixed items" panel was replaced by Recurring items with a schedule. */
@@ -162,11 +162,12 @@ export function loadData(): AppData {
   try {
     const parsed = JSON.parse(raw) as Partial<AppData> & { fixedItems?: unknown }
     const categories = parsed.categories ?? []
-    const recurringExpenses = migrateRecurringAccountId(migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? []))
+    const recurringExpenses = migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? [])
+    const accounts = migrateRecurAccountExclusion(migrateAccountTags(parsed.accounts ?? []))
     return {
       categories,
       keywords: parsed.keywords ?? [],
-      accounts: migrateAccountTags(parsed.accounts ?? []),
+      accounts,
       recurringExpenses: syncRecurringCategoryTags(recurringExpenses, categories),
       transactions: parsed.transactions ?? [],
       investmentAccounts: parsed.investmentAccounts ?? [],

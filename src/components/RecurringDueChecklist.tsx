@@ -3,7 +3,7 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurringExpense } from '../types'
 import { daysInMonth, monthKey, todayStr } from '../lib/format'
 import { getDueOccurrences } from '../lib/recurrence'
-import { findFirstAccountWithTag, hasTag } from '../lib/tags'
+import { findFirstAccountWithTag, hasTag, isTrackingOnly } from '../lib/tags'
 
 export default function RecurringDueChecklist({ type, filterTag }: { type: EntryType; filterTag?: string }) {
   const { data, resolveRecurringOccurrence } = useData()
@@ -44,21 +44,16 @@ export default function RecurringDueChecklist({ type, filterTag }: { type: Entry
 
   return (
     <div>
-      {type === 'expense' && (
+      {type === 'expense' && !recurAccount && dueRows.some((r) => !r.item.accountId) && (
         <p className="mb-2 text-xs text-muted">
-          {recurAccount ? (
-            <>
-              Confirmed items post to <span className="text-text2">{recurAccount.name}</span> and aren't counted in your Expenses
-              total — same treatment as Investment.
-            </>
-          ) : (
-            <>No account is tagged "recur" yet — confirmed items will be Unassigned until you tag one under Manage Accounts.</>
-          )}
+          No account is tagged "recur" yet — confirmed items without their own account will be Unassigned until you tag one under
+          Manage Accounts.
         </p>
       )}
       <div className="space-y-2">
         {dueRows.map(({ item, dueDate, moreOverdue }) => {
           const catName = data.categories.find((c) => c.id === item.categoryId)?.name ?? 'Uncategorized'
+          const targetAccount = item.accountId ? data.accounts.find((a) => a.id === item.accountId) : recurAccount
           return (
             <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold/40 bg-panel-hover px-3 py-2">
               <div>
@@ -76,6 +71,12 @@ export default function RecurringDueChecklist({ type, filterTag }: { type: Entry
                   <span className="rounded-full bg-panel px-2 py-0.5">{catName}</span>
                   <span>{dueDate <= today ? 'Due' : 'Expected'} {dueDate}</span>
                   {moreOverdue > 0 && <span className="text-accent-red">+{moreOverdue} more overdue</span>}
+                  {targetAccount && (
+                    <span>
+                      → {targetAccount.name}
+                      {isTrackingOnly(targetAccount) && ' (not counted in Cash Flow)'}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">

@@ -38,8 +38,8 @@ interface DataContextValue {
   removeKeyword: (id: string) => void
 
   // accounts (expense cash-flow accounts — income is tracked by category instead)
-  addAccount: (name: string, tags: string[]) => Account
-  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'tags'>>) => void
+  addAccount: (name: string, tags: string[], excludeFromCashFlow?: boolean) => Account
+  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'tags' | 'excludeFromCashFlow'>>) => void
   archiveAccount: (id: string) => void
   restoreAccount: (id: string) => void
   activeAccounts: () => Account[]
@@ -54,10 +54,11 @@ interface DataContextValue {
     interval: number
     startDate: string
     tags?: string[]
+    accountId?: string
   }) => void
   updateRecurringExpense: (
     id: string,
-    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate' | 'tags'>>,
+    patch: Partial<Pick<RecurringExpense, 'name' | 'amount' | 'categoryId' | 'frequency' | 'interval' | 'startDate' | 'tags' | 'accountId'>>,
   ) => void
   removeRecurringExpense: (id: string) => void
   toggleRecurringExpensePaused: (id: string) => void
@@ -166,8 +167,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData((d) => ({ ...d, keywords: d.keywords.filter((k) => k.id !== id) }))
       },
 
-      addAccount: (name, tags) => {
-        const acc: Account = { id: newId(), name: name.trim(), tags: tags.length ? tags : undefined, createdAt: Date.now() }
+      addAccount: (name, tags, excludeFromCashFlow) => {
+        const acc: Account = {
+          id: newId(),
+          name: name.trim(),
+          tags: tags.length ? tags : undefined,
+          excludeFromCashFlow: excludeFromCashFlow || undefined,
+          createdAt: Date.now(),
+        }
         setData((d) => ({ ...d, accounts: [...d.accounts, acc] }))
         return acc
       },
@@ -187,7 +194,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
       activeAccounts: () => data.accounts.filter((a) => !a.archived),
 
-      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate, tags }) => {
+      addRecurringExpense: ({ name, amount, categoryId, type, frequency, interval, startDate, tags, accountId }) => {
         const item: RecurringExpense = {
           id: newId(),
           name: name.trim(),
@@ -198,6 +205,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           interval: Math.max(1, Math.round(interval) || 1),
           startDate,
           tags: tags && tags.length ? tags : undefined,
+          accountId,
         }
         setData((d) => ({ ...d, recurringExpenses: [...d.recurringExpenses, item] }))
       },
@@ -236,10 +244,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           return
         }
         const category = data.categories.find((c) => c.id === item.categoryId)
-        // Confirmed recurring occurrences auto-post to the "recur"-tagged account, if one exists —
-        // same treatment as Investment, so a subscription that's really part of a credit card bill
-        // logged separately doesn't get counted twice in Expenses.
-        const recurAccount = item.type === 'expense' ? findFirstAccountWithTag(data.accounts, 'recur') : undefined
+        // An item's own accountId wins if set; otherwise it auto-routes to the "recur"-tagged
+        // account. Whether that account's spend counts toward Cash Flow is entirely up to the
+        // account's own excludeFromCashFlow switch, not anything decided here.
+        const targetAccountId =
+          item.type === 'expense' ? (item.accountId ?? findFirstAccountWithTag(data.accounts, 'recur')?.id) : undefined
         const tx: Transaction = {
           id: newId(),
           date: occurrenceDate,
@@ -249,7 +258,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           amount: amount ?? item.amount,
           type: item.type,
           createdAt: Date.now(),
-          accountId: recurAccount?.id,
+          accountId: targetAccountId,
           recurringExpenseId: item.id,
         }
         setData((d) => ({

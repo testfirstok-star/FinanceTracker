@@ -3,7 +3,7 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurrenceFrequency, RecurringExpense } from '../types'
 import { formatMoney, todayStr } from '../lib/format'
 import { describeSchedule, getNextOccurrence } from '../lib/recurrence'
-import { RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
+import { findFirstAccountWithTag, isTrackingOnly, RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
 
 function normalizeTag(raw: string): string {
   return raw.trim().toLowerCase()
@@ -13,6 +13,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
   const {
     data,
     activeCategories,
+    activeAccounts,
     addRecurringExpense,
     updateRecurringExpense,
     removeRecurringExpense,
@@ -20,8 +21,10 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
     resolveRecurringOccurrence,
   } = useData()
   const categories = activeCategories(type)
+  const accounts = activeAccounts()
   const items = data.recurringExpenses.filter((r) => r.type === type)
   const today = todayStr()
+  const autoAccount = findFirstAccountWithTag(accounts, 'recur')
 
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
@@ -32,6 +35,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
   const [newTags, setNewTags] = useState<string[]>([])
   const [tagDraft, setTagDraft] = useState('')
   const [tagDraftFor, setTagDraftFor] = useState<Record<string, string>>({})
+  const [accountId, setAccountId] = useState('')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -40,6 +44,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
   const [editFrequency, setEditFrequency] = useState<RecurrenceFrequency>('monthly')
   const [editInterval, setEditInterval] = useState('1')
   const [editStartDate, setEditStartDate] = useState('')
+  const [editAccountId, setEditAccountId] = useState('')
 
   function resetForm() {
     setName('')
@@ -50,6 +55,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
     setStartDate(today)
     setNewTags([])
     setTagDraft('')
+    setAccountId('')
   }
 
   function addDraftTag() {
@@ -72,7 +78,17 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
     if (!name.trim() || Number.isNaN(amt) || amt <= 0 || !categoryId || !startDate) return
     const catName = categories.find((c) => c.id === categoryId)?.name
     const tags = withCategoryDerivedTag(catName, newTags)
-    addRecurringExpense({ name, amount: amt, categoryId, type, frequency, interval: Number.isNaN(n) ? 1 : n, startDate, tags })
+    addRecurringExpense({
+      name,
+      amount: amt,
+      categoryId,
+      type,
+      frequency,
+      interval: Number.isNaN(n) ? 1 : n,
+      startDate,
+      tags,
+      accountId: type === 'expense' && accountId ? accountId : undefined,
+    })
     resetForm()
   }
 
@@ -104,6 +120,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
     setEditFrequency(item.frequency)
     setEditInterval(String(item.interval))
     setEditStartDate(item.startDate)
+    setEditAccountId(item.accountId ?? '')
   }
 
   function saveEdit(e: FormEvent) {
@@ -123,6 +140,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
       interval: Number.isNaN(n) ? 1 : n,
       startDate: editStartDate,
       tags,
+      accountId: type === 'expense' && editAccountId ? editAccountId : undefined,
     })
     setEditingId(null)
   }
@@ -192,6 +210,24 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
             Add
           </button>
         </div>
+        {type === 'expense' && (
+          <div className="flex items-center gap-2 sm:col-span-5">
+            <span className="shrink-0 text-xs text-muted">Post to</span>
+            <select
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="rounded-md border border-line px-2 py-1 text-xs bg-panel-hover"
+            >
+              <option value="">Auto {autoAccount ? `(${autoAccount.name})` : '(none tagged "recur")'}</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {isTrackingOnly(a) ? ' — not counted in Cash Flow' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-1.5 sm:col-span-5">
           {newTags.map((t) => (
             <span key={t} className="flex items-center gap-1 rounded-full bg-panel-hover px-2 py-0.5 text-[10px] text-muted">
@@ -288,6 +324,24 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
                 onChange={(e) => setEditStartDate(e.target.value)}
                 className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
               />
+              {type === 'expense' && (
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <span className="shrink-0 text-xs text-muted">Post to</span>
+                  <select
+                    value={editAccountId}
+                    onChange={(e) => setEditAccountId(e.target.value)}
+                    className="flex-1 rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
+                  >
+                    <option value="">Auto {autoAccount ? `(${autoAccount.name})` : '(none tagged "recur")'}</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                        {isTrackingOnly(a) ? ' — not counted in Cash Flow' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-2 sm:col-span-2">
                 <button type="submit" className="flex-1 rounded-md bg-gold px-3 py-2 text-sm font-medium text-ink hover:bg-gold-dark">
                   Save
@@ -311,6 +365,17 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
                   <div className="mt-0.5 text-[10px] text-muted">
                     {describeSchedule(item)} · {item.paused ? 'Paused' : `Next: ${getNextOccurrence(item)}`}
                   </div>
+                  {type === 'expense' &&
+                    (() => {
+                      const targetAccount = item.accountId ? accounts.find((a) => a.id === item.accountId) : autoAccount
+                      if (!targetAccount) return null
+                      return (
+                        <div className="mt-0.5 text-[10px] text-muted">
+                          Posts to {targetAccount.name}
+                          {isTrackingOnly(targetAccount) && ' · not counted in Cash Flow'}
+                        </div>
+                      )
+                    })()}
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   {!item.paused && (

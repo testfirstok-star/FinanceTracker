@@ -25,10 +25,18 @@ export interface Account {
   name: string
   /**
    * Free-form, user-extensible labels (e.g. "bank", "recur", "invest") used to filter the Expenses
-   * summary. The tags "invest" and "recur" carry built-in meaning — see lib/tags.ts — accounts
-   * carrying either are treated as tracking-only and excluded from Expenses/Savings totals by default.
+   * summary and, for "recur", to identify the default account recurring items auto-post to (see
+   * RecurringExpense.accountId). "invest" carries built-in meaning — see lib/tags.ts — accounts
+   * tagged "invest" count toward the Investment bucket on Cash Flow instead of Expenses.
    */
   tags?: string[]
+  /**
+   * Explicit, visible switch: when true, money logged to this account doesn't count toward the
+   * Expenses total or Cash Flow's Savings figure — it's tracked separately instead. Off (the
+   * default) for a normal account. This is independent of tags/routing, so a "recur" account can
+   * still count normally if you want a particular recurring item's spend to hit Cash Flow.
+   */
+  excludeFromCashFlow?: boolean
   /** Hidden accounts no longer appear as pickable options, but past entries keep referencing them by id/name. */
   archived?: boolean
   createdAt: number
@@ -53,6 +61,13 @@ export interface RecurringExpense {
   paused?: boolean
   /** Free-form labels (e.g. "insurance") used to pull a subset of recurring items into their own dedicated checklist. */
   tags?: string[]
+  /**
+   * Expense-type only. Which account confirmed occurrences post to. Unset (the default) auto-routes
+   * to the first account tagged "recur". Whether that counts toward Cash Flow depends entirely on
+   * that account's own excludeFromCashFlow switch — pick a different account here (or flip that
+   * switch) to have a specific item's spend count normally while still showing on this checklist.
+   */
+  accountId?: string
 }
 
 export interface Transaction {
