@@ -4,6 +4,7 @@ import Collapsible from '../components/Collapsible'
 import GroupedTransactions from '../components/GroupedTransactions'
 import CategoryManager from '../components/CategoryManager'
 import AccountManager from '../components/AccountManager'
+import RecurringManageList from '../components/RecurringManageList'
 import PageTitle from '../components/PageTitle'
 import PeriodControls from '../components/PeriodControls'
 import StatTile from '../components/StatTile'
@@ -159,6 +160,12 @@ export default function ExpensesPage() {
       <Card>
         <Collapsible title="Manage accounts">
           <AccountManager />
+        </Collapsible>
+      </Card>
+
+      <Card>
+        <Collapsible title="Manage recurring expenses">
+          <RecurringManageList type="expense" />
         </Collapsible>
       </Card>
 
