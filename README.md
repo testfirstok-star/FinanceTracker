@@ -35,3 +35,9 @@ npm run build
 Pushing to `main` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml),
 which builds the app and publishes it to GitHub Pages. Enable Pages once, under
 **Settings → Pages → Source: GitHub Actions**.
+
+## Planned work
+
+[docs/FINANCE_MODEL_FIXES.md](docs/FINANCE_MODEL_FIXES.md) is the implementation spec for
+making every page agree on Income, Expenses, Invested, Surplus and Cash change. Build the
+fixes in the order listed there.
