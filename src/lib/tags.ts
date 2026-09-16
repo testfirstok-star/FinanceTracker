@@ -1,5 +1,3 @@
-import type { Account } from '../types'
-
 /** Anything with an optional tags array — Account and RecurringExpense both qualify. */
 interface Tagged {
   tags?: string[]
@@ -16,11 +14,6 @@ export const RECURRING_TAG_SUGGESTIONS = ['insurance']
 
 export function hasTag(item: Tagged, tag: string): boolean {
   return (item.tags ?? []).some((t) => t.toLowerCase() === tag.toLowerCase())
-}
-
-/** The account confirmed recurring expenses auto-post to when an item has no explicit accountId: the first active account tagged "recur". */
-export function findFirstAccountWithTag(accounts: Account[], tag: string): Account | undefined {
-  return accounts.find((a) => !a.archived && hasTag(a, tag))
 }
 
 /** If a category's name matches a known recurring-item tag suggestion (e.g. "Insurance"), that tag. */

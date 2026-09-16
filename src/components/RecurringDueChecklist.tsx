@@ -3,7 +3,7 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurringExpense } from '../types'
 import { daysInMonth, monthKey, todayStr } from '../lib/format'
 import { getDueOccurrences } from '../lib/recurrence'
-import { findFirstAccountWithTag, hasTag } from '../lib/tags'
+import { hasTag } from '../lib/tags'
 import { accountKindSuffix } from '../lib/cashflow'
 
 export default function RecurringDueChecklist({ type, filterTag }: { type: EntryType; filterTag?: string }) {
@@ -41,20 +41,21 @@ export default function RecurringDueChecklist({ type, filterTag }: { type: Entry
     resolveRecurringOccurrence(itemId, dueDate, false)
   }
 
-  const recurAccount = type === 'expense' ? findFirstAccountWithTag(data.accounts, 'recur') : undefined
+  const defaultAccount =
+    type === 'expense' ? data.accounts.find((a) => a.id === data.settings.defaultRecurringAccountId) : undefined
 
   return (
     <div>
-      {type === 'expense' && !recurAccount && dueRows.some((r) => !r.item.accountId) && (
+      {type === 'expense' && !defaultAccount && dueRows.some((r) => !r.item.accountId) && (
         <p className="mb-2 text-xs text-muted">
-          No account is tagged "recur" yet — confirmed items without their own account will be Unassigned until you tag one under
-          Manage Accounts.
+          No default account set for recurring expenses — set one in Settings, or pick one per item. Until then these post as
+          Unassigned, which counts them as Expenses.
         </p>
       )}
       <div className="space-y-2">
         {dueRows.map(({ item, dueDate, moreOverdue }) => {
           const catName = data.categories.find((c) => c.id === item.categoryId)?.name ?? 'Uncategorized'
-          const targetAccount = item.accountId ? data.accounts.find((a) => a.id === item.accountId) : recurAccount
+          const targetAccount = item.accountId ? data.accounts.find((a) => a.id === item.accountId) : defaultAccount
           return (
             <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold/40 bg-panel-hover px-3 py-2">
               <div>

@@ -3,7 +3,7 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurrenceFrequency, RecurringExpense } from '../types'
 import { formatMoney, todayStr } from '../lib/format'
 import { describeSchedule, getNextOccurrence } from '../lib/recurrence'
-import { findFirstAccountWithTag, RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
+import { RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
 import { accountKindSuffix } from '../lib/cashflow'
 
 function normalizeTag(raw: string): string {
@@ -25,7 +25,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
   const accounts = activeAccounts()
   const items = data.recurringExpenses.filter((r) => r.type === type)
   const today = todayStr()
-  const autoAccount = findFirstAccountWithTag(accounts, 'recur')
+  const defaultAccount = accounts.find((a) => a.id === data.settings.defaultRecurringAccountId)
 
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
@@ -219,7 +219,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
               onChange={(e) => setAccountId(e.target.value)}
               className="rounded-md border border-line px-2 py-1 text-xs bg-panel-hover"
             >
-              <option value="">Auto {autoAccount ? `(${autoAccount.name})` : '(none tagged "recur")'}</option>
+              <option value="">Default {defaultAccount ? `(${defaultAccount.name})` : '(Unassigned)'}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -333,7 +333,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
                     onChange={(e) => setEditAccountId(e.target.value)}
                     className="flex-1 rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
                   >
-                    <option value="">Auto {autoAccount ? `(${autoAccount.name})` : '(none tagged "recur")'}</option>
+                    <option value="">Default {defaultAccount ? `(${defaultAccount.name})` : '(Unassigned)'}</option>
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.name}
@@ -368,7 +368,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
                   </div>
                   {type === 'expense' &&
                     (() => {
-                      const targetAccount = item.accountId ? accounts.find((a) => a.id === item.accountId) : autoAccount
+                      const targetAccount = item.accountId ? accounts.find((a) => a.id === item.accountId) : defaultAccount
                       if (!targetAccount) return null
                       return (
                         <div className="mt-0.5 text-[10px] text-muted">

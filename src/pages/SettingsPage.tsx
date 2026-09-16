@@ -2,9 +2,11 @@ import Card from '../components/Card'
 import PageTitle from '../components/PageTitle'
 import { useData } from '../hooks/DataContext'
 import { NAV_PAGES, getFullNavConfig } from '../lib/navPages'
+import { accountKindSuffix } from '../lib/cashflow'
 
 export default function SettingsPage() {
-  const { data, updateSettings } = useData()
+  const { data, updateSettings, activeAccounts } = useData()
+  const accounts = activeAccounts()
   const config = getFullNavConfig(data.settings.navConfig)
   const byKey = new Map(NAV_PAGES.map((p) => [p.key, p]))
 
@@ -28,6 +30,47 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <PageTitle>Settings</PageTitle>
+
+      <Card title="Default accounts">
+        <p className="mb-3 text-xs text-muted">
+          Where money lands when you don't pick an account. Anything Unassigned counts as Expenses, so if most of your spending
+          goes on a card, make that card the default and log the bill from your cash account.
+        </p>
+        <div className="space-y-3">
+          <label className="block">
+            <span className="section-label mb-1 block">Default account for quick log</span>
+            <select
+              value={data.settings.defaultExpenseAccountId ?? ''}
+              onChange={(e) => updateSettings({ defaultExpenseAccountId: e.target.value || undefined })}
+              className="w-full rounded-md border border-line bg-panel-hover px-3 py-1.5 text-sm"
+            >
+              <option value="">Unassigned</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {accountKindSuffix(a.kind)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="section-label mb-1 block">Default account for recurring expenses</span>
+            <select
+              value={data.settings.defaultRecurringAccountId ?? ''}
+              onChange={(e) => updateSettings({ defaultRecurringAccountId: e.target.value || undefined })}
+              className="w-full rounded-md border border-line bg-panel-hover px-3 py-1.5 text-sm"
+            >
+              <option value="">Unassigned</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {accountKindSuffix(a.kind)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </Card>
 
       <Card title="Bottom navigation">
         <p className="mb-3 text-xs text-muted">Arrange, show, or hide the pages in the bottom bar.</p>

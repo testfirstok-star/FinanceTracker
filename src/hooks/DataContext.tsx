@@ -19,7 +19,6 @@ import type {
 } from '../types'
 import { loadData, newId, saveData } from '../storage/db'
 import { todayStr } from '../lib/format'
-import { findFirstAccountWithTag } from '../lib/tags'
 
 interface DataContextValue {
   data: AppData
@@ -263,11 +262,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           return
         }
         const category = data.categories.find((c) => c.id === item.categoryId)
-        // An item's own accountId wins if set; otherwise it auto-routes to the "recur"-tagged
-        // account. How that spend is counted is decided by the destination account's kind — see
-        // lib/cashflow.ts — not by anything here.
-        const targetAccountId =
-          item.type === 'expense' ? (item.accountId ?? findFirstAccountWithTag(data.accounts, 'recur')?.id) : undefined
+        // An item's own accountId wins if set; otherwise it falls back to the default recurring
+        // account from Settings. How that spend is counted is decided by the destination account's
+        // kind — see lib/cashflow.ts — not by anything here.
+        const targetAccountId = item.type === 'expense' ? (item.accountId ?? data.settings.defaultRecurringAccountId) : undefined
         const tx: Transaction = {
           id: newId(),
           date: occurrenceDate,

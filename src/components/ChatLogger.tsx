@@ -25,7 +25,12 @@ export default function ChatLogger() {
   const [pendingType, setPendingType] = useState<EntryType>('expense')
   const [pendingCategoryId, setPendingCategoryId] = useState('')
   const [rememberKeyword, setRememberKeyword] = useState(true)
-  const [accountId, setAccountId] = useState('')
+  // Start on the account you log against most, so a card purchase doesn't land in Unassigned and
+  // double count against the card bill. Falls back to Unassigned if that account is gone.
+  const [accountId, setAccountId] = useState(() => {
+    const id = data.settings.defaultExpenseAccountId
+    return id && data.accounts.some((a) => a.id === id && !a.archived) ? id : ''
+  })
 
   const categories = activeCategories(pendingType)
   const accounts = activeAccounts()

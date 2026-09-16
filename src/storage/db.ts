@@ -1,4 +1,4 @@
-import type { Account, AccountKind, AppData, Category, CategoryRole, EntryType, Keyword, RecurringExpense } from '../types'
+import type { Account, AccountKind, AppData, AppSettings, Category, CategoryRole, EntryType, Keyword, RecurringExpense } from '../types'
 import { hasTag, matchingSuggestionForCategory } from '../lib/tags'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
@@ -139,6 +139,16 @@ function migrateAccountKind(accounts: Account[]): Account[] {
   })
 }
 
+/**
+ * One-time migration: recurring expenses used to auto-route to whichever account was tagged "recur".
+ * That's now an explicit setting. Inherit it when the old convention was unambiguous.
+ */
+function migrateDefaultRecurringAccount(settings: AppSettings, accounts: Account[]): AppSettings {
+  if (settings.defaultRecurringAccountId !== undefined) return settings
+  const tagged = accounts.filter((a) => !a.archived && hasTag(a, 'recur'))
+  return tagged.length === 1 ? { ...settings, defaultRecurringAccountId: tagged[0].id } : settings
+}
+
 /** One-time migration: the old "Fixed items" panel was replaced by Recurring items with a schedule. */
 function migrateFixedItems(legacyFixedItems: unknown, existingRecurring: RecurringExpense[]): RecurringExpense[] {
   if (!Array.isArray(legacyFixedItems) || legacyFixedItems.length === 0) return existingRecurring
@@ -192,7 +202,7 @@ export function loadData(): AppData {
       investmentTransactions: parsed.investmentTransactions ?? [],
       loans: parsed.loans ?? [],
       loanTransactions: parsed.loanTransactions ?? [],
-      settings: parsed.settings ?? {},
+      settings: migrateDefaultRecurringAccount(parsed.settings ?? {}, accounts),
     }
   } catch {
     return defaultData()

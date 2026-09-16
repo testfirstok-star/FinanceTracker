@@ -160,6 +160,10 @@ export interface AppSettings {
   weekdayExpenseLimit?: number
   weekendExpenseLimit?: number
   navConfig?: NavConfigEntry[]
+  /** Preselected account in the quick log and the transaction form. Unset means Unassigned. */
+  defaultExpenseAccountId?: string
+  /** Where a confirmed recurring expense posts when the item doesn't name its own account. */
+  defaultRecurringAccountId?: string
 }
 
 export interface AppData {

@@ -4,14 +4,19 @@ import type { EntryType } from '../types'
 import { todayStr } from '../lib/format'
 
 export default function TransactionForm({ type }: { type: EntryType }) {
-  const { activeCategories, activeAccounts, addCategory, addTransaction } = useData()
+  const { data, activeCategories, activeAccounts, addCategory, addTransaction } = useData()
   const categories = activeCategories(type)
   const accounts = type === 'expense' ? activeAccounts() : []
 
   const [date, setDate] = useState(todayStr())
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [accountId, setAccountId] = useState('')
+  // Start on the account you log against most, so a card purchase doesn't land in Unassigned and
+  // double count against the card bill. Falls back to Unassigned if that account is gone.
+  const [accountId, setAccountId] = useState(() => {
+    const id = data.settings.defaultExpenseAccountId
+    return id && data.accounts.some((a) => a.id === id && !a.archived) ? id : ''
+  })
   const [amount, setAmount] = useState('')
   const [newCategoryMode, setNewCategoryMode] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
