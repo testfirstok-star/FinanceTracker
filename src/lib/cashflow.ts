@@ -48,6 +48,8 @@ export interface CashFlowSummary {
   expenses: number
   /** Card purchases in the period — shown for reference, counted nowhere. */
   cardTracked: number
+  /** The slice of Expenses that is card bills being paid off — the counted side of card spending. */
+  cardBillsPaid: number
   investedViaAccounts: number
   deposits: number
   withdrawals: number
@@ -78,6 +80,10 @@ export function summarize(data: AppData, start: string, end: string): CashFlowSu
   const expenseTx = actual.filter((t) => t.type === 'expense')
   const expenses = sum(expenseTx.filter((t) => bucketFor(t, data.accounts) === 'expense'))
   const cardTracked = sum(expenseTx.filter((t) => bucketFor(t, data.accounts) === 'card'))
+  const cardBillCategoryId = data.categories.find((c) => c.role === 'card-bill')?.id
+  const cardBillsPaid = cardBillCategoryId
+    ? sum(expenseTx.filter((t) => t.categoryId === cardBillCategoryId && bucketFor(t, data.accounts) === 'expense'))
+    : 0
   const investedViaAccounts = sum(expenseTx.filter((t) => bucketFor(t, data.accounts) === 'invest'))
 
   // Deposits and withdrawals logged on the Investments page are real money crossing between your
@@ -99,6 +105,7 @@ export function summarize(data: AppData, start: string, end: string): CashFlowSu
     income,
     expenses,
     cardTracked,
+    cardBillsPaid,
     investedViaAccounts,
     deposits,
     withdrawals,
@@ -115,6 +122,19 @@ export function summarize(data: AppData, start: string, end: string): CashFlowSu
   }
 }
 
+/**
+ * Actual expense totals for one period, split by bucket. The Expenses page shows these next to its
+ * own include/exclude-aware total, which is the one figure summarize() can't express.
+ */
+export function expenseBucketTotals(data: AppData, start: string, end: string): Record<SpendBucket, number> {
+  const rows = data.transactions.filter((t) => t.type === 'expense' && isActual(t) && t.date >= start && t.date <= end)
+  return {
+    expense: sum(rows.filter((t) => bucketFor(t, data.accounts) === 'expense')),
+    card: sum(rows.filter((t) => bucketFor(t, data.accounts) === 'card')),
+    invest: sum(rows.filter((t) => bucketFor(t, data.accounts) === 'invest')),
+  }
+}
+
 /** Per-day totals of what actually counts as spending — for the Dashboard calendar and spend limits. */
 export function spendingByDay(data: AppData, filter: (tx: Transaction) => boolean = () => true): Record<string, number> {
   const map: Record<string, number> = {}
@@ -126,9 +146,9 @@ export function spendingByDay(data: AppData, filter: (tx: Transaction) => boolea
 }
 
 /** One-line description of how an account's spend is treated, shown wherever an account is picked. */
-export function accountKindNote(kind: AccountKind): string {
+export function accountKindNote(kind: AccountKind, cardBillCategoryName = 'Credit card bill'): string {
   return kind === 'card'
-    ? "Purchases here are tracked only. Log the card bill from a Cash account — that's the expense."
+    ? `Purchases here are tracked only. Log the bill from a Cash account under "${cardBillCategoryName}" — that's the expense.`
     : kind === 'invest'
       ? 'Counts as Invested, not spent.'
       : 'Counts as Expenses.'

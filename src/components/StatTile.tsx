@@ -13,7 +13,7 @@ export default function StatTile({
   accent?: string
   /** Small caption under the value, e.g. "65% of income". */
   sublabel?: string
-  /** Larger type for the headline stat (Savings). */
+  /** Larger type for the headline stat (Surplus on Cash Flow). */
   big?: boolean
 }) {
   return (

@@ -151,6 +151,12 @@ export default function CashFlowPage() {
             <span>
               Card purchases tracked: <span className="font-figure text-text2">{formatMoney(s.cardTracked)}</span> — covered by the
               card bills you log from a Cash account, so not counted above.
+              {s.cardBillsPaid > 0 && (
+                <>
+                  {' '}
+                  Card bills paid this period: <span className="font-figure text-text2">{formatMoney(s.cardBillsPaid)}</span>.
+                </>
+              )}
             </span>
           </div>
         )}

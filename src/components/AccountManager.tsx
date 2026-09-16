@@ -47,6 +47,7 @@ export default function AccountManager() {
   const [tagDraftFor, setTagDraftFor] = useState<Record<string, string>>({})
 
   const accounts = data.accounts.filter((a) => (showArchived ? true : !a.archived))
+  const cardBillCategory = data.categories.find((c) => c.role === 'card-bill')?.name
 
   function addDraftTag() {
     const tag = normalizeTag(tagDraft)
@@ -99,7 +100,7 @@ export default function AccountManager() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <KindPicker value={newKind} onChange={setNewKind} />
-          <span className="text-[10px] text-muted italic">{accountKindNote(newKind)}</span>
+          <span className="text-[10px] text-muted italic">{accountKindNote(newKind, cardBillCategory)}</span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {newTags.map((t) => (
@@ -213,7 +214,7 @@ export default function AccountManager() {
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <KindPicker value={a.kind} onChange={(kind) => updateAccount(a.id, { kind })} size="xs" />
-              <span className="text-[10px] text-muted italic">{accountKindNote(a.kind)}</span>
+              <span className="text-[10px] text-muted italic">{accountKindNote(a.kind, cardBillCategory)}</span>
             </div>
           </div>
         ))}

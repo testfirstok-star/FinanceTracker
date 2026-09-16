@@ -66,10 +66,10 @@ export interface RecurringExpense {
   /** Free-form labels (e.g. "insurance") used to pull a subset of recurring items into their own dedicated checklist. */
   tags?: string[]
   /**
-   * Expense-type only. Which account confirmed occurrences post to. Unset (the default) routes to
-   * the first account tagged "recur". How that spend is counted depends entirely on the destination
-   * account's kind — post to a cash account for it to count as an Expense, or to a card account to
-   * have it tracked only, while either way it stays on the recurring checklist.
+   * Expense-type only. Which account confirmed occurrences post to. Unset (the default) falls back
+   * to settings.defaultRecurringAccountId. How that spend is counted depends entirely on the
+   * destination account's kind — post to a cash account for it to count as an Expense, or to a card
+   * account to have it tracked only, while either way it stays on the recurring checklist.
    */
   accountId?: string
 }

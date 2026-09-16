@@ -12,7 +12,7 @@ import { usePeriod } from '../hooks/usePeriod'
 import { useData } from '../hooks/DataContext'
 import { formatMoney } from '../lib/format'
 import { hasTag } from '../lib/tags'
-import { bucketFor, isActual } from '../lib/cashflow'
+import { expenseBucketTotals, isActual } from '../lib/cashflow'
 
 const UNASSIGNED_KEY = '__unassigned__'
 
@@ -62,7 +62,7 @@ export default function ExpensesPage() {
     return Array.from(set).sort()
   }, [accounts])
 
-  const { total, cardTracked, investedTotal, breakdown } = useMemo(() => {
+  const { total, cardBillsPaid, cardTracked, investedTotal, breakdown } = useMemo(() => {
     // Planned (future-dated, unconfirmed) entries are excluded everywhere — they aren't money yet.
     const inRange = data.transactions.filter(
       (t) => t.type === 'expense' && isActual(t) && t.date >= period.start && t.date <= period.end,
@@ -70,8 +70,11 @@ export default function ExpensesPage() {
     const included = inRange.filter((t) => !t.accountId || isIncluded(t.accountId))
     const total = included.reduce((s, t) => s + t.amount, 0)
 
-    const cardTracked = inRange.filter((t) => bucketFor(t, data.accounts) === 'card').reduce((s, t) => s + t.amount, 0)
-    const investedTotal = inRange.filter((t) => bucketFor(t, data.accounts) === 'invest').reduce((s, t) => s + t.amount, 0)
+    const cardBillCategoryId = data.categories.find((c) => c.role === 'card-bill')?.id
+    const cardBillsPaid = cardBillCategoryId
+      ? included.filter((t) => t.categoryId === cardBillCategoryId).reduce((s, t) => s + t.amount, 0)
+      : 0
+    const buckets = expenseBucketTotals(data, period.start, period.end)
 
     const breakdownMap = new Map<string, number>()
     for (const t of included) {
@@ -86,8 +89,8 @@ export default function ExpensesPage() {
       }))
       .sort((a, b) => b.amount - a.amount)
 
-    return { total, cardTracked, investedTotal, breakdown }
-  }, [data.transactions, data.accounts, accounts, isIncluded, period.start, period.end])
+    return { total, cardBillsPaid, cardTracked: buckets.card, investedTotal: buckets.invest, breakdown }
+  }, [data, accounts, isIncluded, period.start, period.end])
 
   return (
     <div className="space-y-6">
@@ -97,7 +100,12 @@ export default function ExpensesPage() {
 
       <Card title={`Summary — ${period.label}`}>
         <div className="grid grid-cols-3 gap-2">
-          <StatTile label="Total" value={formatMoney(total)} tone="bad" />
+          <StatTile
+            label="Total"
+            value={formatMoney(total)}
+            tone="bad"
+            sublabel={cardBillsPaid > 0 ? `incl. ${formatMoney(cardBillsPaid)} card bills` : undefined}
+          />
           <StatTile label="Card purchases" value={formatMoney(cardTracked)} sublabel="tracked only" />
           <StatTile label="Invested" value={formatMoney(investedTotal)} sublabel="via accounts, not spent" />
         </div>

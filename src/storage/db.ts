@@ -78,6 +78,7 @@ const ROLE_CATEGORIES: Array<{ role: CategoryRole; name: string; type: EntryType
   { role: 'loan-interest', name: 'Loan interest', type: 'income' },
   { role: 'dividends', name: 'Dividends', type: 'income' },
   { role: 'invest-fees', name: 'Investment fees', type: 'expense' },
+  { role: 'card-bill', name: 'Credit card bill', type: 'expense' },
 ]
 
 /** Idempotent: adds any built-in category that isn't present yet, and never touches existing ones. */

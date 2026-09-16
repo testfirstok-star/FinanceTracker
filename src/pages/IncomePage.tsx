@@ -11,19 +11,13 @@ import StatTile from '../components/StatTile'
 import { usePeriod } from '../hooks/usePeriod'
 import { useData } from '../hooks/DataContext'
 import { formatMoney } from '../lib/format'
-import { isActual } from '../lib/cashflow'
+import { summarize } from '../lib/cashflow'
 
 export default function IncomePage() {
   const { data } = useData()
   const period = usePeriod()
 
-  const total = useMemo(
-    () =>
-      data.transactions
-        .filter((t) => t.type === 'income' && isActual(t) && t.date >= period.start && t.date <= period.end)
-        .reduce((s, t) => s + t.amount, 0),
-    [data.transactions, period.start, period.end],
-  )
+  const total = useMemo(() => summarize(data, period.start, period.end).income, [data, period.start, period.end])
 
   return (
     <div className="space-y-6">
