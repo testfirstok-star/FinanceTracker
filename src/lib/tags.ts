@@ -5,23 +5,17 @@ interface Tagged {
   tags?: string[]
 }
 
-/** Tag suggestions offered on the Accounts UI — the user can add any free-form tag beyond these. */
-export const SUGGESTED_TAGS = ['bank', 'recur', 'invest']
+/**
+ * Tag suggestions offered on the Accounts UI — the user can add any free-form tag beyond these.
+ * Tags are labels for filtering only; how an account's spend is counted is Account.kind.
+ */
+export const SUGGESTED_TAGS = ['bank', 'recur']
 
 /** Tag suggestions offered on the Recurring items UI. */
 export const RECURRING_TAG_SUGGESTIONS = ['insurance']
 
 export function hasTag(item: Tagged, tag: string): boolean {
   return (item.tags ?? []).some((t) => t.toLowerCase() === tag.toLowerCase())
-}
-
-/**
- * True if this account's activity is excluded from the Expenses total and Cash Flow's Savings
- * figure: either it's tagged "invest" (counted in the Investment bucket instead) or its explicit
- * excludeFromCashFlow switch is on (tracked separately, counted nowhere).
- */
-export function isTrackingOnly(account: Account): boolean {
-  return hasTag(account, 'invest') || !!account.excludeFromCashFlow
 }
 
 /** The account confirmed recurring expenses auto-post to when an item has no explicit accountId: the first active account tagged "recur". */

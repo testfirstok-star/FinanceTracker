@@ -11,7 +11,8 @@ import StatTile from '../components/StatTile'
 import { usePeriod } from '../hooks/usePeriod'
 import { useData } from '../hooks/DataContext'
 import { formatMoney } from '../lib/format'
-import { hasTag, isTrackingOnly } from '../lib/tags'
+import { hasTag } from '../lib/tags'
+import { bucketFor, isActual } from '../lib/cashflow'
 
 const UNASSIGNED_KEY = '__unassigned__'
 
@@ -22,15 +23,15 @@ export default function ExpensesPage() {
   const [weekdayLimit, setWeekdayLimit] = useState(String(data.settings.weekdayExpenseLimit ?? ''))
   const [weekendLimit, setWeekendLimit] = useState(String(data.settings.weekendExpenseLimit ?? ''))
 
-  // Per-account inclusion overrides for the summary total. Missing entries fall back to a smart
-  // default: real accounts included, "invest"/"recur"-tagged accounts excluded (same as Cash Flow).
+  // Per-account inclusion overrides for the summary total. Missing entries fall back to the same
+  // rule Cash Flow uses: cash accounts count, card and invest accounts don't.
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
 
   const isIncluded = useCallback(
     (accountId: string): boolean => {
       if (accountId in overrides) return overrides[accountId]
       const acc = accounts.find((a) => a.id === accountId)
-      return acc ? !isTrackingOnly(acc) : true
+      return acc ? acc.kind === 'cash' : true
     },
     [overrides, accounts],
   )
@@ -61,15 +62,16 @@ export default function ExpensesPage() {
     return Array.from(set).sort()
   }, [accounts])
 
-  const { total, recurringTotal, investmentTotal, breakdown } = useMemo(() => {
-    const inRange = data.transactions.filter((t) => t.type === 'expense' && t.date >= period.start && t.date <= period.end)
+  const { total, cardTracked, investedTotal, breakdown } = useMemo(() => {
+    // Planned (future-dated, unconfirmed) entries are excluded everywhere — they aren't money yet.
+    const inRange = data.transactions.filter(
+      (t) => t.type === 'expense' && isActual(t) && t.date >= period.start && t.date <= period.end,
+    )
     const included = inRange.filter((t) => !t.accountId || isIncluded(t.accountId))
     const total = included.reduce((s, t) => s + t.amount, 0)
 
-    const recurAccountIds = new Set(accounts.filter((a) => hasTag(a, 'recur')).map((a) => a.id))
-    const investAccountIds = new Set(accounts.filter((a) => hasTag(a, 'invest')).map((a) => a.id))
-    const recurringTotal = inRange.filter((t) => t.accountId && recurAccountIds.has(t.accountId)).reduce((s, t) => s + t.amount, 0)
-    const investmentTotal = inRange.filter((t) => t.accountId && investAccountIds.has(t.accountId)).reduce((s, t) => s + t.amount, 0)
+    const cardTracked = inRange.filter((t) => bucketFor(t, data.accounts) === 'card').reduce((s, t) => s + t.amount, 0)
+    const investedTotal = inRange.filter((t) => bucketFor(t, data.accounts) === 'invest').reduce((s, t) => s + t.amount, 0)
 
     const breakdownMap = new Map<string, number>()
     for (const t of included) {
@@ -84,8 +86,8 @@ export default function ExpensesPage() {
       }))
       .sort((a, b) => b.amount - a.amount)
 
-    return { total, recurringTotal, investmentTotal, breakdown }
-  }, [data.transactions, accounts, isIncluded, period.start, period.end])
+    return { total, cardTracked, investedTotal, breakdown }
+  }, [data.transactions, data.accounts, accounts, isIncluded, period.start, period.end])
 
   return (
     <div className="space-y-6">
@@ -96,8 +98,8 @@ export default function ExpensesPage() {
       <Card title={`Summary — ${period.label}`}>
         <div className="grid grid-cols-3 gap-2">
           <StatTile label="Total" value={formatMoney(total)} tone="bad" />
-          <StatTile label="Recurring" value={formatMoney(recurringTotal)} />
-          <StatTile label="Investment" value={formatMoney(investmentTotal)} />
+          <StatTile label="Card purchases" value={formatMoney(cardTracked)} sublabel="tracked only" />
+          <StatTile label="Invested" value={formatMoney(investedTotal)} sublabel="via accounts, not spent" />
         </div>
 
         {accounts.length > 0 && (

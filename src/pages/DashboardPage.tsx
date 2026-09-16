@@ -7,7 +7,8 @@ import MonthCalendar from '../components/MonthCalendar'
 import PageTitle from '../components/PageTitle'
 import StatTile from '../components/StatTile'
 import UpcomingEntries from '../components/UpcomingEntries'
-import { formatMoney, formatMonthLabel, monthKey, shiftMonth, todayStr } from '../lib/format'
+import { daysInMonth, formatMoney, formatMonthLabel, monthKey, shiftMonth, todayStr } from '../lib/format'
+import { countsAsSpending, isActual, summarize } from '../lib/cashflow'
 import type { EntryType, Transaction } from '../types'
 
 function DayLog({ date, transactions }: { date: string; transactions: Transaction[] }) {
@@ -40,11 +41,17 @@ export default function DashboardPage() {
   const [customEnd, setCustomEnd] = useState(todayStr())
   const [customPieType, setCustomPieType] = useState<EntryType>('expense')
 
+  const monthStart = `${month}-01`
+  const monthEnd = `${month}-${String(daysInMonth(month)).padStart(2, '0')}`
+  const summary = useMemo(() => summarize(data, monthStart, monthEnd), [data, monthStart, monthEnd])
+
+  // Calendars, day logs and pies show only what the totals count: actual entries, and for expenses
+  // only those on a cash account (or no account). Card purchases and money moved into investments
+  // are real, but they are not spending — counting them here is what made this page disagree with
+  // Cash Flow, and made a brokerage deposit look like blowing the daily spend limit.
   const monthTx = useMemo(() => data.transactions.filter((t) => monthKey(t.date) === month), [data.transactions, month])
-  const expenseTx = monthTx.filter((t) => t.type === 'expense')
-  const incomeTx = monthTx.filter((t) => t.type === 'income')
-  const totalExpense = expenseTx.reduce((s, t) => s + t.amount, 0)
-  const totalIncome = incomeTx.reduce((s, t) => s + t.amount, 0)
+  const expenseTx = monthTx.filter((t) => countsAsSpending(t, data.accounts))
+  const incomeTx = monthTx.filter((t) => t.type === 'income' && isActual(t))
 
   function breakdown(txs: typeof monthTx) {
     const map = new Map<string, number>()
@@ -58,14 +65,13 @@ export default function DashboardPage() {
     return map
   }
 
+  const customSummary = useMemo(() => summarize(data, customStart, customEnd), [data, customStart, customEnd])
   const customTx = useMemo(
     () => data.transactions.filter((t) => t.date >= customStart && t.date <= customEnd),
     [data.transactions, customStart, customEnd],
   )
-  const customExpenseTx = customTx.filter((t) => t.type === 'expense')
-  const customIncomeTx = customTx.filter((t) => t.type === 'income')
-  const customTotalExpense = customExpenseTx.reduce((s, t) => s + t.amount, 0)
-  const customTotalIncome = customIncomeTx.reduce((s, t) => s + t.amount, 0)
+  const customExpenseTx = customTx.filter((t) => countsAsSpending(t, data.accounts))
+  const customIncomeTx = customTx.filter((t) => t.type === 'income' && isActual(t))
 
   return (
     <div className="space-y-6">
@@ -83,9 +89,9 @@ export default function DashboardPage() {
 
       <Card title="Monthly report">
         <div className="mb-4 grid grid-cols-3 gap-2">
-          <StatTile label="Income" value={formatMoney(totalIncome)} tone="good" />
-          <StatTile label="Expenses" value={formatMoney(totalExpense)} tone="bad" />
-          <StatTile label="Net" value={formatMoney(totalIncome - totalExpense)} />
+          <StatTile label="Income" value={formatMoney(summary.income)} tone="good" />
+          <StatTile label="Expenses" value={formatMoney(summary.expenses)} tone="bad" />
+          <StatTile label="Surplus" value={formatMoney(summary.surplus)} tone={summary.surplus >= 0 ? 'good' : 'bad'} />
         </div>
 
         <div className="mb-2 flex gap-1">
@@ -154,9 +160,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="mb-4 grid grid-cols-3 gap-2">
-            <StatTile label="Income" value={formatMoney(customTotalIncome)} tone="good" />
-            <StatTile label="Expenses" value={formatMoney(customTotalExpense)} tone="bad" />
-            <StatTile label="Net" value={formatMoney(customTotalIncome - customTotalExpense)} />
+            <StatTile label="Income" value={formatMoney(customSummary.income)} tone="good" />
+            <StatTile label="Expenses" value={formatMoney(customSummary.expenses)} tone="bad" />
+            <StatTile
+              label="Surplus"
+              value={formatMoney(customSummary.surplus)}
+              tone={customSummary.surplus >= 0 ? 'good' : 'bad'}
+            />
           </div>
 
           <div className="mb-2 flex gap-1">

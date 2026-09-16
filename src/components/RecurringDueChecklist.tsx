@@ -3,7 +3,8 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurringExpense } from '../types'
 import { daysInMonth, monthKey, todayStr } from '../lib/format'
 import { getDueOccurrences } from '../lib/recurrence'
-import { findFirstAccountWithTag, hasTag, isTrackingOnly } from '../lib/tags'
+import { findFirstAccountWithTag, hasTag } from '../lib/tags'
+import { accountKindSuffix } from '../lib/cashflow'
 
 export default function RecurringDueChecklist({ type, filterTag }: { type: EntryType; filterTag?: string }) {
   const { data, resolveRecurringOccurrence } = useData()
@@ -74,7 +75,7 @@ export default function RecurringDueChecklist({ type, filterTag }: { type: Entry
                   {targetAccount && (
                     <span>
                       → {targetAccount.name}
-                      {isTrackingOnly(targetAccount) && ' (not counted in Cash Flow)'}
+                      {accountKindSuffix(targetAccount.kind)}
                     </span>
                   )}
                 </div>

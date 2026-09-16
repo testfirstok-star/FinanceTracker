@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { EntryType, Transaction } from '../types'
 import { formatMoney } from '../lib/format'
+import { isActual, isPlanned } from '../lib/cashflow'
 import Collapsible from './Collapsible'
 
 const UNASSIGNED_KEY = '__unassigned__'
@@ -59,7 +60,8 @@ export default function GroupedTransactions({
         key,
         label: g.label,
         transactions: g.transactions.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt),
-        total: g.transactions.reduce((s, t) => s + t.amount, 0),
+        // Planned entries are listed but never added up — they aren't money yet.
+        total: g.transactions.filter(isActual).reduce((s, t) => s + t.amount, 0),
       }))
       .sort((a, b) => (a.key === UNASSIGNED_KEY ? 1 : b.key === UNASSIGNED_KEY ? -1 : b.total - a.total))
   }, [inRange, groupBy, accounts, data.accounts, data.categories])
@@ -185,6 +187,14 @@ export default function GroupedTransactions({
                       {t.recurringExpenseId && (
                         <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] text-gold" title="Logged from a recurring item">
                           Recurring
+                        </span>
+                      )}
+                      {isPlanned(t) && (
+                        <span
+                          className="rounded-full bg-panel-hover px-1.5 py-0.5 text-[10px] text-muted"
+                          title="Planned — not counted in any total until you confirm it"
+                        >
+                          Planned
                         </span>
                       )}
                     </div>

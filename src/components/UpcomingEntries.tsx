@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { EntryType, Transaction } from '../types'
-import { formatMoney } from '../lib/format'
+import { formatMoney, todayStr } from '../lib/format'
 import Collapsible from './Collapsible'
 
 export default function UpcomingEntries({ type }: { type: EntryType }) {
@@ -97,10 +97,18 @@ export default function UpcomingEntries({ type }: { type: EntryType }) {
           <div className="flex flex-1 items-start justify-between gap-2">
             <div>
               <div className="text-xs text-text">{t.description}</div>
-              <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted">
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted">
                 <span className="rounded-full bg-panel-hover px-2 py-0.5">{t.categoryName}</span>
                 <span className="font-figure">{formatMoney(t.amount)}</span>
                 <span>{t.date}</span>
+                {!t.confirmed && t.date < todayStr() && (
+                  <span
+                    className="rounded-full bg-accent-red/15 px-1.5 py-0.5 text-accent-red"
+                    title="This date has passed and it's still unconfirmed, so nothing counts it yet"
+                  >
+                    Overdue
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">

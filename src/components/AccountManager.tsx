@@ -1,9 +1,38 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useData } from '../hooks/DataContext'
-import { hasTag, SUGGESTED_TAGS } from '../lib/tags'
+import type { AccountKind } from '../types'
+import { SUGGESTED_TAGS } from '../lib/tags'
+import { accountKindNote } from '../lib/cashflow'
 
 function normalizeTag(raw: string): string {
   return raw.trim().toLowerCase()
+}
+
+const KINDS: Array<{ value: AccountKind; label: string }> = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'card', label: 'Card' },
+  { value: 'invest', label: 'Invest' },
+]
+
+/** Cash · Card · Invest picker. The choice decides how spend logged here is counted. */
+function KindPicker({ value, onChange, size = 'sm' }: { value: AccountKind; onChange: (k: AccountKind) => void; size?: 'sm' | 'xs' }) {
+  const text = size === 'sm' ? 'text-xs' : 'text-[10px]'
+  return (
+    <div className="flex overflow-hidden rounded-md border border-line">
+      {KINDS.map((k) => (
+        <button
+          key={k.value}
+          type="button"
+          onClick={() => onChange(k.value)}
+          className={`px-2 py-0.5 ${text} transition-colors ${
+            value === k.value ? 'bg-gold text-ink font-medium' : 'text-muted hover:text-gold'
+          }`}
+        >
+          {k.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export default function AccountManager() {
@@ -11,7 +40,7 @@ export default function AccountManager() {
   const [name, setName] = useState('')
   const [newTags, setNewTags] = useState<string[]>([])
   const [tagDraft, setTagDraft] = useState('')
-  const [newExcludeFromCashFlow, setNewExcludeFromCashFlow] = useState(false)
+  const [newKind, setNewKind] = useState<AccountKind>('cash')
   const [showArchived, setShowArchived] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -29,11 +58,11 @@ export default function AccountManager() {
   function handleAdd(e: FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    addAccount(name, newTags, newExcludeFromCashFlow)
+    addAccount(name, newKind, newTags)
     setName('')
     setNewTags([])
     setTagDraft('')
-    setNewExcludeFromCashFlow(false)
+    setNewKind('cash')
   }
 
   function addTagToAccount(accountId: string, rawTag: string) {
@@ -68,15 +97,10 @@ export default function AccountManager() {
             Add
           </button>
         </div>
-        <label className="flex items-center gap-1.5 text-xs text-muted">
-          <input
-            type="checkbox"
-            checked={!newExcludeFromCashFlow}
-            onChange={(e) => setNewExcludeFromCashFlow(!e.target.checked)}
-            className="accent-gold"
-          />
-          Log into Cash Flow
-        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <KindPicker value={newKind} onChange={setNewKind} />
+          <span className="text-[10px] text-muted italic">{accountKindNote(newKind)}</span>
+        </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {newTags.map((t) => (
             <span key={t} className="flex items-center gap-1 rounded-full bg-panel-hover px-2 py-0.5 text-[10px] text-muted">
@@ -187,22 +211,10 @@ export default function AccountManager() {
                 </button>
               ))}
             </div>
-            <label className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted">
-              <input
-                type="checkbox"
-                checked={!a.excludeFromCashFlow}
-                onChange={() => updateAccount(a.id, { excludeFromCashFlow: !a.excludeFromCashFlow })}
-                className="accent-gold"
-              />
-              Log into Cash Flow
-            </label>
-            {a.excludeFromCashFlow && (
-              <p className="mt-1 text-[10px] text-muted italic">
-                {hasTag(a, 'invest')
-                  ? "Expenses logged here count toward Investment, not the Expenses total."
-                  : "Expenses logged here won't be counted in Cash Flow — tracked separately."}
-              </p>
-            )}
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <KindPicker value={a.kind} onChange={(kind) => updateAccount(a.id, { kind })} size="xs" />
+              <span className="text-[10px] text-muted italic">{accountKindNote(a.kind)}</span>
+            </div>
           </div>
         ))}
         {accounts.length === 0 && <p className="text-xs text-muted">No accounts yet — add one above.</p>}

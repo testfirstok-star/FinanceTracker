@@ -3,7 +3,8 @@ import { useData } from '../hooks/DataContext'
 import type { EntryType, RecurrenceFrequency, RecurringExpense } from '../types'
 import { formatMoney, todayStr } from '../lib/format'
 import { describeSchedule, getNextOccurrence } from '../lib/recurrence'
-import { findFirstAccountWithTag, isTrackingOnly, RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
+import { findFirstAccountWithTag, RECURRING_TAG_SUGGESTIONS, withCategoryDerivedTag } from '../lib/tags'
+import { accountKindSuffix } from '../lib/cashflow'
 
 function normalizeTag(raw: string): string {
   return raw.trim().toLowerCase()
@@ -222,7 +223,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
-                  {isTrackingOnly(a) ? ' — not counted in Cash Flow' : ''}
+                  {accountKindSuffix(a.kind)}
                 </option>
               ))}
             </select>
@@ -336,7 +337,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.name}
-                        {isTrackingOnly(a) ? ' — not counted in Cash Flow' : ''}
+                        {accountKindSuffix(a.kind)}
                       </option>
                     ))}
                   </select>
@@ -372,7 +373,7 @@ export default function RecurringManageList({ type }: { type: EntryType }) {
                       return (
                         <div className="mt-0.5 text-[10px] text-muted">
                           Posts to {targetAccount.name}
-                          {isTrackingOnly(targetAccount) && ' · not counted in Cash Flow'}
+                          {accountKindSuffix(targetAccount.kind)}
                         </div>
                       )
                     })()}

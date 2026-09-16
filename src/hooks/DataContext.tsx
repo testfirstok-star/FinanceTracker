@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
   Account,
+  AccountKind,
   AppData,
   AppSettings,
   Category,
@@ -38,8 +39,8 @@ interface DataContextValue {
   removeKeyword: (id: string) => void
 
   // accounts (expense cash-flow accounts — income is tracked by category instead)
-  addAccount: (name: string, tags: string[], excludeFromCashFlow?: boolean) => Account
-  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'tags' | 'excludeFromCashFlow'>>) => void
+  addAccount: (name: string, kind: AccountKind, tags: string[]) => Account
+  updateAccount: (id: string, patch: Partial<Pick<Account, 'name' | 'kind' | 'tags'>>) => void
   archiveAccount: (id: string) => void
   restoreAccount: (id: string) => void
   activeAccounts: () => Account[]
@@ -167,12 +168,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData((d) => ({ ...d, keywords: d.keywords.filter((k) => k.id !== id) }))
       },
 
-      addAccount: (name, tags, excludeFromCashFlow) => {
+      addAccount: (name, kind, tags) => {
         const acc: Account = {
           id: newId(),
           name: name.trim(),
+          kind,
           tags: tags.length ? tags : undefined,
-          excludeFromCashFlow: excludeFromCashFlow || undefined,
           createdAt: Date.now(),
         }
         setData((d) => ({ ...d, accounts: [...d.accounts, acc] }))
@@ -245,8 +246,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
         const category = data.categories.find((c) => c.id === item.categoryId)
         // An item's own accountId wins if set; otherwise it auto-routes to the "recur"-tagged
-        // account. Whether that account's spend counts toward Cash Flow is entirely up to the
-        // account's own excludeFromCashFlow switch, not anything decided here.
+        // account. How that spend is counted is decided by the destination account's kind — see
+        // lib/cashflow.ts — not by anything here.
         const targetAccountId =
           item.type === 'expense' ? (item.accountId ?? findFirstAccountWithTag(data.accounts, 'recur')?.id) : undefined
         const tx: Transaction = {
@@ -260,6 +261,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: Date.now(),
           accountId: targetAccountId,
           recurringExpenseId: item.id,
+          // Logging an occurrence ahead of its date makes it planned, exactly like any other
+          // future-dated entry — it stays out of every total until the user confirms it.
+          ...(occurrenceDate > todayStr() ? { confirmed: false } : {}),
         }
         setData((d) => ({
           ...d,

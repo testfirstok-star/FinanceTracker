@@ -1,4 +1,4 @@
-import type { Account, AppData, Category, Keyword, RecurringExpense } from '../types'
+import type { Account, AccountKind, AppData, Category, Keyword, RecurringExpense } from '../types'
 import { hasTag, matchingSuggestionForCategory } from '../lib/tags'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
@@ -111,14 +111,18 @@ function migrateAccountTags(accounts: Account[]): Account[] {
 }
 
 /**
- * One-time migration: accounts tagged "recur" used to be unconditionally excluded from Cash Flow.
- * That's now an explicit, independent switch — default it on for accounts that were relying on the
- * old implicit behavior, but only if the user hasn't already made an explicit choice either way.
+ * One-time migration: how an account's spend was counted used to be inferred from the "invest" tag
+ * plus an excludeFromCashFlow switch. It's now an explicit kind. Derive it once from whatever the
+ * account was relying on, then drop the dead field. An explicit kind already set always wins.
  */
-function migrateRecurAccountExclusion(accounts: Account[]): Account[] {
-  return accounts.map((a) =>
-    a.excludeFromCashFlow === undefined && hasTag(a, 'recur') ? { ...a, excludeFromCashFlow: true } : a,
-  )
+function migrateAccountKind(accounts: Account[]): Account[] {
+  return accounts.map((a) => {
+    const legacy = a as Partial<Account> & { excludeFromCashFlow?: boolean }
+    const { excludeFromCashFlow, ...rest } = legacy
+    if (rest.kind) return rest as Account
+    const kind: AccountKind = hasTag(rest, 'invest') ? 'invest' : excludeFromCashFlow === true ? 'card' : 'cash'
+    return { ...rest, kind } as Account
+  })
 }
 
 /** One-time migration: the old "Fixed items" panel was replaced by Recurring items with a schedule. */
@@ -163,7 +167,7 @@ export function loadData(): AppData {
     const parsed = JSON.parse(raw) as Partial<AppData> & { fixedItems?: unknown }
     const categories = parsed.categories ?? []
     const recurringExpenses = migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? [])
-    const accounts = migrateRecurAccountExclusion(migrateAccountTags(parsed.accounts ?? []))
+    const accounts = migrateAccountKind(migrateAccountTags(parsed.accounts ?? []))
     return {
       categories,
       keywords: parsed.keywords ?? [],

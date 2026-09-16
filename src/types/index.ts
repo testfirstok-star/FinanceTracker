@@ -16,6 +16,9 @@ export interface Keyword {
   type: EntryType
 }
 
+/** What an account is, which decides how money logged against it is counted. */
+export type AccountKind = 'cash' | 'card' | 'invest'
+
 /**
  * A cash-flow account (checking, credit card, cash, ...) that expenses are logged against.
  * Income is tracked by category instead, not by account.
@@ -24,19 +27,15 @@ export interface Account {
   id: string
   name: string
   /**
-   * Free-form, user-extensible labels (e.g. "bank", "recur", "invest") used to filter the Expenses
-   * summary and, for "recur", to identify the default account recurring items auto-post to (see
-   * RecurringExpense.accountId). "invest" carries built-in meaning — see lib/tags.ts — accounts
-   * tagged "invest" count toward the Investment bucket on Cash Flow instead of Expenses.
+   * Decides how spend logged here is counted — see lib/cashflow.ts, the only place that reads it.
+   * cash   — bank/cash/wallet. Everything logged here counts as Expenses.
+   * card   — credit card. Purchases are tracked for reference but never counted; the card bill you
+   *          pay from a cash account is the expense (cash-basis accounting, no double counting).
+   * invest — brokerage/savings bridge. Money logged here counts as Invested, not spent.
    */
+  kind: AccountKind
+  /** Free-form labels for filtering the Expenses summary. They carry NO accounting meaning. */
   tags?: string[]
-  /**
-   * Explicit, visible switch: when true, money logged to this account doesn't count toward the
-   * Expenses total or Cash Flow's Savings figure — it's tracked separately instead. Off (the
-   * default) for a normal account. This is independent of tags/routing, so a "recur" account can
-   * still count normally if you want a particular recurring item's spend to hit Cash Flow.
-   */
-  excludeFromCashFlow?: boolean
   /** Hidden accounts no longer appear as pickable options, but past entries keep referencing them by id/name. */
   archived?: boolean
   createdAt: number
@@ -62,10 +61,10 @@ export interface RecurringExpense {
   /** Free-form labels (e.g. "insurance") used to pull a subset of recurring items into their own dedicated checklist. */
   tags?: string[]
   /**
-   * Expense-type only. Which account confirmed occurrences post to. Unset (the default) auto-routes
-   * to the first account tagged "recur". Whether that counts toward Cash Flow depends entirely on
-   * that account's own excludeFromCashFlow switch — pick a different account here (or flip that
-   * switch) to have a specific item's spend count normally while still showing on this checklist.
+   * Expense-type only. Which account confirmed occurrences post to. Unset (the default) routes to
+   * the first account tagged "recur". How that spend is counted depends entirely on the destination
+   * account's kind — post to a cash account for it to count as an Expense, or to a card account to
+   * have it tracked only, while either way it stays on the recurring checklist.
    */
   accountId?: string
 }
@@ -79,12 +78,21 @@ export interface Transaction {
   amount: number
   type: EntryType
   createdAt: number
-  /** Only set when logged with a future date in advance; false until the user reviews/confirms it. */
+  /**
+   * Only set when logged with a future date in advance; false until the user reviews/confirms it.
+   * A transaction with confirmed === false is "planned" and is counted by nothing — see
+   * isActual() in lib/cashflow.ts. Absent (the normal case) means actual.
+   */
   confirmed?: boolean
   /** Expense-type only. Absent means "Unassigned" — shown in its own bucket until reassigned. */
   accountId?: string
   /** Set when this transaction was created by confirming a recurring occurrence as incurred. */
   recurringExpenseId?: string
+  /**
+   * Income-type only. Set when this is interest earned on money lent out, linking it to that loan.
+   * Loan principal coming back is never a transaction — only interest is real income.
+   */
+  loanId?: string
 }
 
 export interface InvestmentAccount {
