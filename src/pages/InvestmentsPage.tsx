@@ -70,6 +70,10 @@ export default function InvestmentsPage() {
               <div className="font-figure font-semibold text-accent-red">{formatMoney(totals.expenses)}</div>
             </div>
           </div>
+          <p className="mt-3 text-xs text-muted">
+            Deposits and withdrawals always show up on Cash Flow as money invested. Dividends and fees stay inside the portfolio
+            unless you tick "paid out to / paid from my bank" when logging them.
+          </p>
         </Card>
       )}
 

@@ -76,6 +76,8 @@ function defaultKeywords(categories: Category[]): Keyword[] {
 /** Categories the app creates for itself, found by role so a rename never breaks the link. */
 const ROLE_CATEGORIES: Array<{ role: CategoryRole; name: string; type: EntryType }> = [
   { role: 'loan-interest', name: 'Loan interest', type: 'income' },
+  { role: 'dividends', name: 'Dividends', type: 'income' },
+  { role: 'invest-fees', name: 'Investment fees', type: 'expense' },
 ]
 
 /** Idempotent: adds any built-in category that isn't present yet, and never touches existing ones. */

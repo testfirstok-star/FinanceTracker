@@ -85,7 +85,19 @@ interface DataContextValue {
   addInvestmentAccount: (name: string) => InvestmentAccount
   removeInvestmentAccount: (id: string) => void
   updateInvestmentAccountValue: (id: string, currentValue: number | undefined) => void
-  addInvestmentTransaction: (input: { accountId: string; description: string; category: string; amount: number; type: InvestmentEntryType; date?: string }) => void
+  /**
+   * paidOut marks a dividend that actually landed in the bank, or a fee actually paid from it. That
+   * side is real Income/Expenses, so a matching Transaction is created and linked to this one.
+   */
+  addInvestmentTransaction: (input: {
+    accountId: string
+    description: string
+    category: string
+    amount: number
+    type: InvestmentEntryType
+    date?: string
+    paidOut?: boolean
+  }) => void
   updateInvestmentTransaction: (id: string, patch: Partial<Pick<InvestmentTransaction, 'date' | 'description' | 'category' | 'amount' | 'type'>>) => void
   removeInvestmentTransaction: (id: string) => void
 
@@ -303,7 +315,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }))
       },
       removeTransaction: (id) => {
-        setData((d) => ({ ...d, transactions: d.transactions.filter((t) => t.id !== id) }))
+        setData((d) => {
+          const linked = d.transactions.find((t) => t.id === id)?.investmentTransactionId
+          return {
+            ...d,
+            transactions: d.transactions.filter((t) => t.id !== id),
+            // The portfolio entry and its bank-side entry are two views of one event: drop both.
+            investmentTransactions: linked ? d.investmentTransactions.filter((t) => t.id !== linked) : d.investmentTransactions,
+          }
+        })
       },
 
       addInvestmentAccount: (name) => {
@@ -325,17 +345,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }))
       },
       addInvestmentTransaction: (input) => {
+        const when = input.date ?? todayStr()
         const tx: InvestmentTransaction = {
           id: newId(),
           accountId: input.accountId,
-          date: input.date ?? todayStr(),
+          date: when,
           description: input.description.trim(),
           category: input.category.trim(),
           amount: input.amount,
           type: input.type,
           createdAt: Date.now(),
+          paidOut: input.paidOut || undefined,
         }
-        setData((d) => ({ ...d, investmentTransactions: [tx, ...d.investmentTransactions] }))
+        // Money that crossed between the portfolio and the bank is real income or real spending, so
+        // it gets a normal transaction too. Anything reinvested stays portfolio-internal.
+        const crossesToBank = input.paidOut && (input.type === 'investment_income' || input.type === 'investment_expense')
+        const isIncomeSide = input.type === 'investment_income'
+        const role = isIncomeSide ? 'dividends' : 'invest-fees'
+        const category = data.categories.find((c) => c.role === role)
+        const mirror: Transaction | undefined = crossesToBank
+          ? {
+              id: newId(),
+              date: when,
+              description: tx.description || (isIncomeSide ? 'Dividend' : 'Investment fee'),
+              categoryId: category?.id ?? '',
+              categoryName: category?.name ?? (isIncomeSide ? 'Dividends' : 'Investment fees'),
+              amount: input.amount,
+              type: isIncomeSide ? 'income' : 'expense',
+              createdAt: Date.now(),
+              investmentTransactionId: tx.id,
+              ...(when > todayStr() ? { confirmed: false } : {}),
+            }
+          : undefined
+        setData((d) => ({
+          ...d,
+          investmentTransactions: [tx, ...d.investmentTransactions],
+          transactions: mirror ? [mirror, ...d.transactions] : d.transactions,
+        }))
       },
       updateInvestmentTransaction: (id, patch) => {
         setData((d) => ({
@@ -344,7 +390,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }))
       },
       removeInvestmentTransaction: (id) => {
-        setData((d) => ({ ...d, investmentTransactions: d.investmentTransactions.filter((t) => t.id !== id) }))
+        setData((d) => ({
+          ...d,
+          investmentTransactions: d.investmentTransactions.filter((t) => t.id !== id),
+          transactions: d.transactions.filter((t) => t.investmentTransactionId !== id),
+        }))
       },
 
       addLoan: (personName, initialAmount, date) => {

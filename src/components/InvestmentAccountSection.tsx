@@ -19,6 +19,7 @@ export default function InvestmentAccountSection({ account }: { account: Investm
   const [category, setCategory] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState<InvestmentEntryType>('deposit')
+  const [paidOut, setPaidOut] = useState(false)
 
   const [typeFilter, setTypeFilter] = useState<'all' | InvestmentEntryType>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -62,10 +63,11 @@ export default function InvestmentAccountSection({ account }: { account: Investm
     e.preventDefault()
     const amt = parseFloat(amount)
     if (!description.trim() || !category.trim() || Number.isNaN(amt) || amt <= 0) return
-    addInvestmentTransaction({ accountId: account.id, description, category, amount: amt, type, date })
+    addInvestmentTransaction({ accountId: account.id, description, category, amount: amt, type, date, paidOut })
     setDescription('')
     setCategory('')
     setAmount('')
+    setPaidOut(false)
   }
 
   const gainTone = totals.gain >= 0 ? 'text-accent-green' : 'text-accent-red'
@@ -177,6 +179,14 @@ export default function InvestmentAccountSection({ account }: { account: Investm
           <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
             Log
           </button>
+          {(type === 'investment_income' || type === 'investment_expense') && (
+            <label className="flex items-center gap-2 text-xs text-muted sm:col-span-6">
+              <input type="checkbox" checked={paidOut} onChange={(e) => setPaidOut(e.target.checked)} className="accent-gold" />
+              {type === 'investment_income'
+                ? 'Paid out to my bank (count as Income)'
+                : 'Paid from my bank (count as Expense)'}
+            </label>
+          )}
         </form>
       </Collapsible>
 
@@ -229,7 +239,14 @@ export default function InvestmentAccountSection({ account }: { account: Investm
                     <td className="px-3 py-2">
                       <span className="rounded-full bg-panel-hover px-2 py-0.5 text-xs">{t.category}</span>
                     </td>
-                    <td className="px-3 py-2 text-xs text-muted">{TYPE_LABELS[t.type]}</td>
+                    <td className="px-3 py-2 text-xs text-muted">
+                      {TYPE_LABELS[t.type]}
+                      {t.paidOut && (
+                        <span className="ml-1.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] text-gold" title="Also counted on Cash Flow">
+                          bank
+                        </span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-3 py-2 text-right font-medium">{formatMoney(t.amount)}</td>
                     <td className="px-3 py-2 text-right">
                       <button

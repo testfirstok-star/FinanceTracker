@@ -98,6 +98,11 @@ export interface Transaction {
    * Loan principal coming back is never a transaction — only interest is real income.
    */
   loanId?: string
+  /**
+   * Set when this entry is the bank side of a dividend paid out of, or a fee paid into, a portfolio.
+   * Holds the id of the InvestmentTransaction it mirrors; deleting either side deletes both.
+   */
+  investmentTransactionId?: string
 }
 
 export interface InvestmentAccount {
@@ -117,6 +122,11 @@ export interface InvestmentTransaction {
   amount: number
   type: InvestmentEntryType
   createdAt: number
+  /**
+   * Dividends and fees stay inside the portfolio by default. Set when this one actually crossed to
+   * or from the bank, in which case a matching Transaction carries it into Income or Expenses.
+   */
+  paidOut?: boolean
 }
 
 /** Money lent to a specific person — created "like an account", one per person. */
