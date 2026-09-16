@@ -95,6 +95,12 @@ interface DataContextValue {
   archiveLoan: (id: string) => void
   restoreLoan: (id: string) => void
   addLoanTransaction: (input: { loanId: string; type: LoanEntryType; amount: number; date?: string; description?: string }) => void
+  /**
+   * Interest earned on money lent out. Unlike the principal coming back, this IS income, so it
+   * lands in the transaction log as an income entry linked to the loan. The loan balance, which
+   * tracks principal only, is deliberately untouched.
+   */
+  addLoanInterest: (input: { loanId: string; amount: number; date?: string; description?: string }) => void
   updateLoanTransaction: (id: string, patch: Partial<Pick<LoanTransaction, 'date' | 'amount' | 'description'>>) => void
   removeLoanTransaction: (id: string) => void
 }
@@ -374,6 +380,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: Date.now(),
         }
         setData((d) => ({ ...d, loanTransactions: [tx, ...d.loanTransactions] }))
+      },
+      addLoanInterest: ({ loanId, amount, date, description }) => {
+        const category = data.categories.find((c) => c.role === 'loan-interest')
+        const personName = data.loans.find((l) => l.id === loanId)?.personName
+        const when = date ?? todayStr()
+        const tx: Transaction = {
+          id: newId(),
+          date: when,
+          description: description?.trim() || `Interest — ${personName ?? 'loan'}`,
+          categoryId: category?.id ?? '',
+          categoryName: category?.name ?? 'Loan interest',
+          amount,
+          type: 'income',
+          createdAt: Date.now(),
+          loanId,
+          ...(when > todayStr() ? { confirmed: false } : {}),
+        }
+        setData((d) => ({ ...d, transactions: [tx, ...d.transactions] }))
       },
       updateLoanTransaction: (id, patch) => {
         setData((d) => ({

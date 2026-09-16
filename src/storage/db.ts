@@ -1,4 +1,4 @@
-import type { Account, AccountKind, AppData, Category, Keyword, RecurringExpense } from '../types'
+import type { Account, AccountKind, AppData, Category, CategoryRole, EntryType, Keyword, RecurringExpense } from '../types'
 import { hasTag, matchingSuggestionForCategory } from '../lib/tags'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
@@ -73,8 +73,20 @@ function defaultKeywords(categories: Category[]): Keyword[] {
   }))
 }
 
+/** Categories the app creates for itself, found by role so a rename never breaks the link. */
+const ROLE_CATEGORIES: Array<{ role: CategoryRole; name: string; type: EntryType }> = [
+  { role: 'loan-interest', name: 'Loan interest', type: 'income' },
+]
+
+/** Idempotent: adds any built-in category that isn't present yet, and never touches existing ones. */
+function ensureRoleCategories(categories: Category[]): Category[] {
+  const missing = ROLE_CATEGORIES.filter((r) => !categories.some((c) => c.role === r.role))
+  if (missing.length === 0) return categories
+  return [...categories, ...missing.map((r) => ({ id: newId(), name: r.name, type: r.type, role: r.role }))]
+}
+
 function defaultData(): AppData {
-  const categories = defaultCategories()
+  const categories = ensureRoleCategories(defaultCategories())
   return {
     categories,
     keywords: defaultKeywords(categories),
@@ -165,7 +177,7 @@ export function loadData(): AppData {
   if (!raw) return defaultData()
   try {
     const parsed = JSON.parse(raw) as Partial<AppData> & { fixedItems?: unknown }
-    const categories = parsed.categories ?? []
+    const categories = ensureRoleCategories(parsed.categories ?? [])
     const recurringExpenses = migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? [])
     const accounts = migrateAccountKind(migrateAccountTags(parsed.accounts ?? []))
     return {

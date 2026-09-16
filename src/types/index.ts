@@ -1,10 +1,15 @@
 export type EntryType = 'expense' | 'income'
 export type InvestmentEntryType = 'investment_income' | 'investment_expense' | 'deposit' | 'withdrawal'
 
+/** Marks a category the app itself creates and looks up by purpose rather than by name. */
+export type CategoryRole = 'loan-interest' | 'dividends' | 'invest-fees' | 'card-bill'
+
 export interface Category {
   id: string
   name: string
   type: EntryType
+  /** Set on built-in categories so the app can find them after a rename. */
+  role?: CategoryRole
   /** Hidden categories no longer appear as pickable options, but past entries keep referencing them by id/name. */
   archived?: boolean
 }
