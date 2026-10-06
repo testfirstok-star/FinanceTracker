@@ -6,7 +6,7 @@ import Collapsible from '../components/Collapsible'
 import MonthCalendar from '../components/MonthCalendar'
 import PageTitle from '../components/PageTitle'
 import StatTile from '../components/StatTile'
-import UpcomingEntries from '../components/UpcomingEntries'
+import UpcomingList from '../components/UpcomingList'
 import { daysInMonth, formatMoney, formatMonthLabel, monthKey, shiftMonth, todayStr } from '../lib/format'
 import { countsAsSpending, isActual, summarize } from '../lib/cashflow'
 import type { EntryType, Transaction } from '../types'
@@ -122,7 +122,7 @@ export default function DashboardPage() {
         {selectedExpenseDay && (
           <DayLog date={selectedExpenseDay} transactions={expenseTx.filter((t) => t.date === selectedExpenseDay)} />
         )}
-        <UpcomingEntries type="expense" />
+        <UpcomingList type="expense" title="Upcoming expenses" />
       </Card>
 
       <Card title="Income">
@@ -133,7 +133,7 @@ export default function DashboardPage() {
           onDayClick={(date) => setSelectedIncomeDay((d) => (d === date ? null : date))}
         />
         {selectedIncomeDay && <DayLog date={selectedIncomeDay} transactions={incomeTx.filter((t) => t.date === selectedIncomeDay)} />}
-        <UpcomingEntries type="income" />
+        <UpcomingList type="income" title="Upcoming income" />
       </Card>
 
       <Card>

@@ -3,7 +3,7 @@ import Card from '../components/Card'
 import ChatLogger from '../components/ChatLogger'
 import KeywordManager from '../components/KeywordManager'
 import TransactionForm from '../components/TransactionForm'
-import RecurringDueChecklist from '../components/RecurringDueChecklist'
+import UpcomingList from '../components/UpcomingList'
 import Collapsible from '../components/Collapsible'
 import PageTitle from '../components/PageTitle'
 import type { EntryType } from '../types'
@@ -43,12 +43,16 @@ export default function LoggingPage() {
       </Card>
 
       <Card title="Insurance">
-        <p className="mb-2 text-xs text-muted">Premiums you can't afford to miss — also included in Recurring expenses below.</p>
-        <RecurringDueChecklist type="expense" filterTag="insurance" />
+        <p className="mb-2 text-xs text-muted">Premiums you can't afford to miss — also included in Upcoming expenses below.</p>
+        <UpcomingList type="expense" filterTag="insurance" />
       </Card>
 
-      <Card title="Recurring expenses">
-        <RecurringDueChecklist type="expense" />
+      <Card title="Upcoming expenses">
+        <p className="mb-2 text-xs text-muted">
+          Recurring items due this month and anything you logged ahead, in one list. It's the same list as on the Dashboard, so
+          ticking something off here clears it there too.
+        </p>
+        <UpcomingList type="expense" />
       </Card>
     </div>
   )

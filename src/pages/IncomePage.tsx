@@ -3,7 +3,7 @@ import Card from '../components/Card'
 import Collapsible from '../components/Collapsible'
 import GroupedTransactions from '../components/GroupedTransactions'
 import CategoryManager from '../components/CategoryManager'
-import RecurringDueChecklist from '../components/RecurringDueChecklist'
+import UpcomingList from '../components/UpcomingList'
 import RecurringManageList from '../components/RecurringManageList'
 import PageTitle from '../components/PageTitle'
 import PeriodControls from '../components/PeriodControls'
@@ -31,8 +31,12 @@ export default function IncomePage() {
         </div>
       </Card>
 
-      <Card title="Recurring income">
-        <RecurringDueChecklist type="income" />
+      <Card title="Upcoming income">
+        <p className="mb-2 text-xs text-muted">
+          Recurring income due this month and anything you logged ahead, in one list. It's the same list as on the Dashboard, so
+          ticking something off here clears it there too.
+        </p>
+        <UpcomingList type="income" />
         <div className="mt-3">
           <Collapsible title="Manage recurring income">
             <RecurringManageList type="income" />
