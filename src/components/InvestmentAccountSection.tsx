@@ -1,8 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { InvestmentAccount, InvestmentEntryType } from '../types'
+import type { Period } from '../hooks/usePeriod'
 import { formatMoney, todayStr } from '../lib/format'
-import { chartShown, latestValue, valuesFor, valueSeries } from '../lib/investments'
+import { chartShown, latestValue, moneyAtWork, periodView, valuesFor, valueSeries } from '../lib/investments'
 import Collapsible from './Collapsible'
 import InvestmentValueChart from './InvestmentValueChart'
 
@@ -13,7 +14,7 @@ const TYPE_LABELS: Record<InvestmentEntryType, string> = {
   withdrawal: 'Withdrawal',
 }
 
-export default function InvestmentAccountSection({ account }: { account: InvestmentAccount }) {
+export default function InvestmentAccountSection({ account, period }: { account: InvestmentAccount; period: Period }) {
   const { data, addInvestmentTransaction, removeInvestmentTransaction, removeInvestmentAccount, addInvestmentValue, removeInvestmentValue } =
     useData()
 
@@ -50,6 +51,8 @@ export default function InvestmentAccountSection({ account }: { account: Investm
     [account.id, data.investmentTransactions, data.investmentValues],
   )
 
+  const view = useMemo(() => periodView(series, period.start, period.end), [series, period.start, period.end])
+
   const totals = useMemo(() => {
     const deposits = transactions.filter((t) => t.type === 'deposit').reduce((s, t) => s + t.amount, 0)
     const withdrawals = transactions.filter((t) => t.type === 'withdrawal').reduce((s, t) => s + t.amount, 0)
@@ -73,11 +76,24 @@ export default function InvestmentAccountSection({ account }: { account: Investm
     setValueDate(todayStr())
   }
 
+  const amountValid = !Number.isNaN(parseFloat(amount)) && parseFloat(amount) > 0
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const amt = parseFloat(amount)
-    if (!description.trim() || !category.trim() || Number.isNaN(amt) || amt <= 0) return
-    addInvestmentTransaction({ accountId: account.id, description, category, amount: amt, type, date, paidOut })
+    // Only the amount is genuinely needed. Requiring a description and a category used to drop the
+    // entry silently, which looked exactly like deposits not being recorded at all.
+    if (!amountValid) return
+    const isTransfer = type === 'deposit' || type === 'withdrawal'
+    addInvestmentTransaction({
+      accountId: account.id,
+      description: description.trim() || TYPE_LABELS[type],
+      category: category.trim() || (isTransfer ? 'Transfer' : 'Uncategorized'),
+      amount: amt,
+      type,
+      date,
+      paidOut,
+    })
     setDescription('')
     setCategory('')
     setAmount('')
@@ -136,6 +152,53 @@ export default function InvestmentAccountSection({ account }: { account: Investm
         </div>
       </div>
 
+      <div className="mb-4 rounded-lg border border-line p-3">
+        <div className="section-label mb-2">In {period.label}</div>
+        {view.tooFewPoints ? (
+          <p className="text-xs text-muted">
+            {series.length === 0
+              ? 'No value logged yet, so there is nothing to measure.'
+              : 'Needs a logged value at each end of this range. Widen the range, or log one more.'}
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-md bg-panel-hover p-2">
+                <div className="text-xs text-muted">Gain</div>
+                <div className={`font-figure font-semibold ${view.gain >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                  {view.gain >= 0 ? '+' : ''}
+                  {formatMoney(view.gain)}
+                </div>
+              </div>
+              <div className="rounded-md bg-panel-hover p-2">
+                <div className="text-xs text-muted">You added</div>
+                <div className="font-figure font-semibold">{formatMoney(view.deposited)}</div>
+              </div>
+              <div className="rounded-md bg-panel-hover p-2">
+                <div className="text-xs text-muted">Return</div>
+                <div className={`font-figure font-semibold ${view.gain >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                  {view.returnPct === undefined ? '—' : `${view.returnPct >= 0 ? '+' : ''}${view.returnPct.toFixed(2)}%`}
+                </div>
+              </div>
+            </div>
+            <p className="mt-1.5 text-[10px] text-muted">
+              {view.opening && view.opening.date < period.start ? (
+                <>
+                  Measured from your {view.opening.date} value, the last one logged before this range, through{' '}
+                  {view.closing?.date}. Log a value nearer the start of the range for a tighter answer.
+                </>
+              ) : (
+                <>
+                  Measured between the values you logged on {view.opening?.date} and {view.closing?.date}.
+                </>
+              )}{' '}
+              Worked out on {formatMoney(moneyAtWork(view))} at work, with your own top-ups cancelled out, so this is what the
+              market did.
+            </p>
+          </>
+        )}
+      </div>
+
       <div className="mb-4">
         <div className="section-label mb-1">Log what it's worth</div>
         <form onSubmit={logValue} className="flex flex-wrap items-center gap-2">
@@ -166,7 +229,10 @@ export default function InvestmentAccountSection({ account }: { account: Investm
         {values.length > 0 && (
           <div className="mt-2">
             {chartShown(account) ? (
-              <InvestmentValueChart points={series} />
+              <InvestmentValueChart
+                points={series}
+                highlight={view.opening && view.closing ? { from: view.opening.date, to: view.closing.date } : undefined}
+              />
             ) : (
               series.length >= 2 && <p className="py-2 text-xs text-muted">Chart hidden — turn it back on under Settings.</p>
             )}
@@ -213,13 +279,13 @@ export default function InvestmentAccountSection({ account }: { account: Investm
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
+            placeholder="Description (optional)"
             className="rounded-md border border-line px-2 py-1.5 text-sm bg-panel-hover"
           />
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="Category (e.g. Dividend)"
+            placeholder="Category (optional)"
             className="rounded-md border border-line px-2 py-1.5 text-sm bg-panel-hover"
           />
           <select
@@ -242,7 +308,12 @@ export default function InvestmentAccountSection({ account }: { account: Investm
             placeholder="Amount"
             className="rounded-md border border-line px-2 py-1.5 text-sm bg-panel-hover"
           />
-          <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
+          <button
+            type="submit"
+            disabled={!amountValid}
+            className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-40"
+            title={amountValid ? undefined : 'Enter an amount first'}
+          >
             Log
           </button>
           {(type === 'investment_income' || type === 'investment_expense') && (

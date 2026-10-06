@@ -1,4 +1,17 @@
-import { CartesianGrid, Area, AreaChart, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import type { ValuePoint } from '../lib/investments'
 import { formatMoney } from '../lib/format'
 
@@ -75,7 +88,23 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{
   return <Rows point={payload[0].payload} />
 }
 
-export default function InvestmentValueChart({ points }: { points: ValuePoint[] }) {
+/**
+ * The selected period is shaded rather than cropped to. Cropping a monthly period would throw away
+ * the multi-year view, which is the whole reason the chart exists; shading keeps the long arc
+ * visible while showing exactly which slice the period figures describe.
+ */
+export default function InvestmentValueChart({
+  points,
+  highlight,
+}: {
+  points: ValuePoint[]
+  highlight?: { from: string; to: string }
+}) {
+  const band =
+    highlight && highlight.from !== highlight.to ? (
+      <ReferenceArea x1={highlight.from} x2={highlight.to} fill="var(--color-gold)" fillOpacity={0.07} stroke="none" />
+    ) : null
+
   if (points.length < 2) {
     return (
       <p className="py-6 text-center text-xs text-muted">
@@ -96,6 +125,7 @@ export default function InvestmentValueChart({ points }: { points: ValuePoint[] 
       <ResponsiveContainer width="100%" height={170}>
         <LineChart data={points} margin={MARGIN}>
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+          {band}
           <XAxis dataKey="date" hide />
           <YAxis tickFormatter={compactMoney} width={Y_WIDTH} tickLine={false} axisLine={false} {...AXIS} />
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--chart-grid)', strokeWidth: 1 }} />
@@ -141,6 +171,7 @@ export default function InvestmentValueChart({ points }: { points: ValuePoint[] 
             </linearGradient>
           </defs>
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+          {band}
           <XAxis dataKey="date" tickFormatter={shortDate} tickLine={false} axisLine={false} minTickGap={16} {...AXIS} />
           <YAxis tickFormatter={compactMoney} width={Y_WIDTH} tickLine={false} axisLine={false} {...AXIS} />
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--chart-grid)', strokeWidth: 1 }} />

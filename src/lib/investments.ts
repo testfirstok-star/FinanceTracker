@@ -55,3 +55,64 @@ export function valueSeries(
 export function chartShown(account: InvestmentAccount): boolean {
   return account.chartEnabled !== false
 }
+
+/** The figures for one date range, plus the points a chart should highlight for it. */
+export interface PeriodView {
+  /** Snapshot used as the opening mark: the last one before the range, else the first one inside it. */
+  opening?: ValuePoint
+  /** Snapshot used as the closing mark: the last one at or before the end of the range. */
+  closing?: ValuePoint
+  /** What the market made over the window, with your own contributions cancelled out. */
+  gain: number
+  /** Net deposits less withdrawals between the two marks. */
+  deposited: number
+  /** gain over the money actually at work: the opening value plus anything added. */
+  returnPct: number | undefined
+  /** True when the range holds too few snapshots to measure between. */
+  tooFewPoints: boolean
+}
+
+/**
+ * Gain over a window, which is NOT just the change in value: topping up raises the value without
+ * earning a penny. Because each point already carries value - invested, the difference between two
+ * points' gains cancels every deposit in between and leaves only what the market did.
+ *
+ * The window is measured between real snapshots, never interpolated, so callers should show which
+ * dates were actually used.
+ */
+function daysApart(a: string, b: string): number {
+  return Math.abs(Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400000
+}
+
+export function periodView(series: ValuePoint[], start: string, end: string): PeriodView {
+  const inRange = series.filter((p) => p.date >= start && p.date <= end)
+  const before = series.filter((p) => p.date < start)
+  const closing = inRange.length > 0 ? inRange[inRange.length - 1] : undefined
+  // Open from whichever snapshot sits closest to the start of the range, before it or inside it.
+  // Reaching back to the last known value is right when nothing was logged near the start, but
+  // doing it unconditionally would widen a window the user picked to land on their own log dates.
+  const lastBefore = before.length > 0 ? before[before.length - 1] : undefined
+  const firstInside = inRange.length > 0 ? inRange[0] : undefined
+  let pick =
+    lastBefore && firstInside
+      ? daysApart(firstInside.date, start) < daysApart(lastBefore.date, start)
+        ? firstInside
+        : lastBefore
+      : (lastBefore ?? firstInside)
+  // A single in-range snapshot can't be both ends; fall back to the last known value before it.
+  if (pick && pick === closing && lastBefore) pick = lastBefore
+  const opening = pick
+  const measurable = opening !== undefined && closing !== undefined && opening !== closing
+  if (!measurable) {
+    return { opening, closing, gain: 0, deposited: 0, returnPct: undefined, tooFewPoints: true }
+  }
+  const gain = closing.gain - opening.gain
+  const deposited = closing.invested - opening.invested
+  const atWork = opening.value + Math.max(deposited, 0)
+  return { opening, closing, gain, deposited, returnPct: atWork > 0 ? (gain / atWork) * 100 : undefined, tooFewPoints: false }
+}
+
+/** The money that was at work over the window, which the return percentage is measured against. */
+export function moneyAtWork(view: PeriodView): number {
+  return view.opening ? view.opening.value + Math.max(view.deposited, 0) : 0
+}
