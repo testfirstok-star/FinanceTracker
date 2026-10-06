@@ -109,8 +109,26 @@ export interface InvestmentAccount {
   id: string
   name: string
   createdAt: number
-  /** User-entered current market value of the whole portfolio; drives auto gain/loss vs invested. */
+  /**
+   * Legacy single "current value" field, replaced by the dated value log. loadData() turns any
+   * surviving value into the first log entry and clears this, so new code should never read it.
+   */
   currentValue?: number
+  /** Whether the value-over-time chart is drawn for this portfolio. Unset means shown. */
+  chartEnabled?: boolean
+}
+
+/**
+ * A dated snapshot of what a portfolio is worth, logged by hand the way you'd log a weight.
+ * Snapshots are not cash movements — nothing here touches Income, Expenses or Cash Flow. Only
+ * deposits and withdrawals move money, and those are InvestmentTransactions.
+ */
+export interface InvestmentValueEntry {
+  id: string
+  accountId: string
+  date: string // YYYY-MM-DD
+  value: number
+  createdAt: number
 }
 
 export interface InvestmentTransaction {
@@ -174,6 +192,7 @@ export interface AppData {
   transactions: Transaction[]
   investmentAccounts: InvestmentAccount[]
   investmentTransactions: InvestmentTransaction[]
+  investmentValues: InvestmentValueEntry[]
   loans: Loan[]
   loanTransactions: LoanTransaction[]
   settings: AppSettings

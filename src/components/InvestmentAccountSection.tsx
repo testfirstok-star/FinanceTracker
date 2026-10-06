@@ -2,7 +2,9 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useData } from '../hooks/DataContext'
 import type { InvestmentAccount, InvestmentEntryType } from '../types'
 import { formatMoney, todayStr } from '../lib/format'
+import { chartShown, latestValue, valuesFor, valueSeries } from '../lib/investments'
 import Collapsible from './Collapsible'
+import InvestmentValueChart from './InvestmentValueChart'
 
 const TYPE_LABELS: Record<InvestmentEntryType, string> = {
   investment_income: 'Investment income',
@@ -12,7 +14,8 @@ const TYPE_LABELS: Record<InvestmentEntryType, string> = {
 }
 
 export default function InvestmentAccountSection({ account }: { account: InvestmentAccount }) {
-  const { data, addInvestmentTransaction, removeInvestmentTransaction, removeInvestmentAccount, updateInvestmentAccountValue } = useData()
+  const { data, addInvestmentTransaction, removeInvestmentTransaction, removeInvestmentAccount, addInvestmentValue, removeInvestmentValue } =
+    useData()
 
   const [date, setDate] = useState(todayStr())
   const [description, setDescription] = useState('')
@@ -24,7 +27,8 @@ export default function InvestmentAccountSection({ account }: { account: Investm
   const [typeFilter, setTypeFilter] = useState<'all' | InvestmentEntryType>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
 
-  const [valueDraft, setValueDraft] = useState(String(account.currentValue ?? ''))
+  const [valueDraft, setValueDraft] = useState('')
+  const [valueDate, setValueDate] = useState(todayStr())
 
   const transactions = useMemo(
     () =>
@@ -40,23 +44,33 @@ export default function InvestmentAccountSection({ account }: { account: Investm
     (t) => (typeFilter === 'all' || t.type === typeFilter) && (categoryFilter === 'all' || t.category === categoryFilter),
   )
 
+  const values = useMemo(() => valuesFor(data.investmentValues, account.id).slice().reverse(), [data.investmentValues, account.id])
+  const series = useMemo(
+    () => valueSeries(account.id, data.investmentTransactions, data.investmentValues),
+    [account.id, data.investmentTransactions, data.investmentValues],
+  )
+
   const totals = useMemo(() => {
     const deposits = transactions.filter((t) => t.type === 'deposit').reduce((s, t) => s + t.amount, 0)
     const withdrawals = transactions.filter((t) => t.type === 'withdrawal').reduce((s, t) => s + t.amount, 0)
     const income = transactions.filter((t) => t.type === 'investment_income').reduce((s, t) => s + t.amount, 0)
     const expenses = transactions.filter((t) => t.type === 'investment_expense').reduce((s, t) => s + t.amount, 0)
     const invested = deposits - withdrawals
-    const currentValue = account.currentValue ?? invested
+    const currentValue = latestValue(account, data.investmentValues) ?? invested
     // Total net = market value of holdings + income received - expenses paid.
     const totalNet = currentValue + income - expenses
     const gain = totalNet - invested
     const gainPct = invested !== 0 ? (gain / invested) * 100 : 0
     return { invested, income, expenses, currentValue, totalNet, gain, gainPct }
-  }, [transactions, account.currentValue])
+  }, [transactions, account, data.investmentValues])
 
-  function commitValue() {
+  function logValue(e: FormEvent) {
+    e.preventDefault()
     const amt = parseFloat(valueDraft)
-    updateInvestmentAccountValue(account.id, valueDraft.trim() === '' || Number.isNaN(amt) ? undefined : amt)
+    if (Number.isNaN(amt) || amt < 0 || !valueDate) return
+    addInvestmentValue({ accountId: account.id, value: amt, date: valueDate })
+    setValueDraft('')
+    setValueDate(todayStr())
   }
 
   function handleSubmit(e: FormEvent) {
@@ -122,19 +136,71 @@ export default function InvestmentAccountSection({ account }: { account: Investm
         </div>
       </div>
 
-      <label className="mb-4 block">
-        <span className="section-label mb-1 block">Current portfolio value</span>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          value={valueDraft}
-          onChange={(e) => setValueDraft(e.target.value)}
-          onBlur={commitValue}
-          placeholder={formatMoney(totals.invested)}
-          className="w-full rounded-md border border-line bg-panel-hover px-3 py-1.5 text-sm sm:w-56"
-        />
-      </label>
+      <div className="mb-4">
+        <div className="section-label mb-1">Log what it's worth</div>
+        <form onSubmit={logValue} className="flex flex-wrap items-center gap-2">
+          <input
+            type="date"
+            value={valueDate}
+            onChange={(e) => setValueDate(e.target.value)}
+            className="rounded-md border border-line bg-panel-hover px-2 py-1.5 text-sm"
+          />
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value={valueDraft}
+            onChange={(e) => setValueDraft(e.target.value)}
+            placeholder={formatMoney(totals.invested)}
+            className="w-36 rounded-md border border-line bg-panel-hover px-3 py-1.5 text-sm"
+          />
+          <button type="submit" className="rounded-md bg-gold px-3 py-1.5 text-sm font-medium text-ink hover:bg-gold-dark">
+            Log value
+          </button>
+        </form>
+        <p className="mt-1 text-[10px] text-muted">
+          Check the balance and write it down, as often as you like. Logging the same date again replaces it. This records what
+          the portfolio is worth — it never counts as income or spending.
+        </p>
+
+        {values.length > 0 && (
+          <div className="mt-2">
+            {chartShown(account) ? (
+              <InvestmentValueChart points={series} />
+            ) : (
+              series.length >= 2 && <p className="py-2 text-xs text-muted">Chart hidden — turn it back on under Settings.</p>
+            )}
+            <Collapsible title={`Value log (${values.length})`}>
+              <div className="space-y-1">
+                {values.map((v) => {
+                  const point = series.find((p) => p.date === v.date)
+                  return (
+                    <div key={v.id} className="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-1.5 text-xs">
+                      <span className="text-muted">{v.date}</span>
+                      <div className="flex items-center gap-2">
+                        {point && (
+                          <span className={point.gain >= 0 ? 'text-accent-green' : 'text-accent-red'}>
+                            {point.gain >= 0 ? '+' : ''}
+                            {formatMoney(point.gain)}
+                          </span>
+                        )}
+                        <span className="font-figure font-medium">{formatMoney(v.value)}</span>
+                        <button
+                          onClick={() => removeInvestmentValue(v.id)}
+                          className="-m-1.5 rounded-md p-1.5 text-muted transition-colors hover:bg-panel-hover hover:text-accent-red"
+                          title="Delete this snapshot"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Collapsible>
+          </div>
+        )}
+      </div>
 
       <Collapsible title="Log a transaction">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2 sm:grid-cols-6">

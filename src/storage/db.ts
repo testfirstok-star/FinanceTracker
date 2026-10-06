@@ -1,4 +1,16 @@
-import type { Account, AccountKind, AppData, AppSettings, Category, CategoryRole, EntryType, Keyword, RecurringExpense } from '../types'
+import type {
+  Account,
+  AccountKind,
+  AppData,
+  AppSettings,
+  Category,
+  CategoryRole,
+  EntryType,
+  InvestmentAccount,
+  InvestmentValueEntry,
+  Keyword,
+  RecurringExpense,
+} from '../types'
 import { hasTag, matchingSuggestionForCategory } from '../lib/tags'
 
 const STORAGE_KEY = 'finance-tracker-data-v1'
@@ -98,6 +110,7 @@ function defaultData(): AppData {
     transactions: [],
     investmentAccounts: [],
     investmentTransactions: [],
+    investmentValues: [],
     loans: [],
     loanTransactions: [],
     settings: {},
@@ -150,6 +163,27 @@ function migrateDefaultRecurringAccount(settings: AppSettings, accounts: Account
   return tagged.length === 1 ? { ...settings, defaultRecurringAccountId: tagged[0].id } : settings
 }
 
+/**
+ * One-time migration: a portfolio's worth used to be one overwritable number. It's now a dated log,
+ * so the surviving number becomes the log's first entry, dated today — which is what that field
+ * always meant — and the dead field is dropped. Edit or delete that entry if the date is wrong.
+ */
+function migrateCurrentValueToLog(
+  accounts: InvestmentAccount[],
+  values: InvestmentValueEntry[],
+): { accounts: InvestmentAccount[]; values: InvestmentValueEntry[] } {
+  const seeded: InvestmentValueEntry[] = []
+  const migrated = accounts.map((a) => {
+    if (a.currentValue === undefined) return a
+    const { currentValue, ...rest } = a
+    if (!values.some((v) => v.accountId === a.id)) {
+      seeded.push({ id: newId(), accountId: a.id, date: todayStrLocal(), value: currentValue, createdAt: Date.now() })
+    }
+    return rest
+  })
+  return { accounts: migrated, values: seeded.length ? [...values, ...seeded] : values }
+}
+
 /** One-time migration: the old "Fixed items" panel was replaced by Recurring items with a schedule. */
 function migrateFixedItems(legacyFixedItems: unknown, existingRecurring: RecurringExpense[]): RecurringExpense[] {
   if (!Array.isArray(legacyFixedItems) || legacyFixedItems.length === 0) return existingRecurring
@@ -193,14 +227,16 @@ export function loadData(): AppData {
     const categories = ensureRoleCategories(parsed.categories ?? [])
     const recurringExpenses = migrateFixedItems(parsed.fixedItems, parsed.recurringExpenses ?? [])
     const accounts = migrateAccountKind(migrateAccountTags(parsed.accounts ?? []))
+    const portfolios = migrateCurrentValueToLog(parsed.investmentAccounts ?? [], parsed.investmentValues ?? [])
     return {
       categories,
       keywords: parsed.keywords ?? [],
       accounts,
       recurringExpenses: syncRecurringCategoryTags(recurringExpenses, categories),
       transactions: parsed.transactions ?? [],
-      investmentAccounts: parsed.investmentAccounts ?? [],
+      investmentAccounts: portfolios.accounts,
       investmentTransactions: parsed.investmentTransactions ?? [],
+      investmentValues: portfolios.values,
       loans: parsed.loans ?? [],
       loanTransactions: parsed.loanTransactions ?? [],
       settings: migrateDefaultRecurringAccount(parsed.settings ?? {}, accounts),

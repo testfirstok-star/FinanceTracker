@@ -3,9 +3,10 @@ import PageTitle from '../components/PageTitle'
 import { useData } from '../hooks/DataContext'
 import { NAV_PAGES, getFullNavConfig } from '../lib/navPages'
 import { accountKindSuffix } from '../lib/cashflow'
+import { chartShown } from '../lib/investments'
 
 export default function SettingsPage() {
-  const { data, updateSettings, activeAccounts } = useData()
+  const { data, updateSettings, activeAccounts, setInvestmentChartEnabled } = useData()
   const accounts = activeAccounts()
   const config = getFullNavConfig(data.settings.navConfig)
   const byKey = new Map(NAV_PAGES.map((p) => [p.key, p]))
@@ -70,6 +71,33 @@ export default function SettingsPage() {
             </select>
           </label>
         </div>
+      </Card>
+
+      <Card title="Investment charts">
+        <p className="mb-3 text-xs text-muted">
+          Which portfolios draw a value-over-time chart under their value log. Switch off the ones you'd rather just read as
+          numbers.
+        </p>
+        {data.investmentAccounts.length === 0 ? (
+          <p className="text-xs text-muted">No investments yet — add one on the Investments page.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {data.investmentAccounts.map((a) => {
+              const shown = chartShown(a)
+              return (
+                <div key={a.id} className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-2">
+                  <span className={`text-sm ${shown ? 'text-text2' : 'text-muted'}`}>{a.name}</span>
+                  <button
+                    onClick={() => setInvestmentChartEnabled(a.id, !shown)}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${shown ? 'bg-gold/20 text-gold' : 'border border-line text-muted'}`}
+                  >
+                    {shown ? 'Chart on' : 'Chart off'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </Card>
 
       <Card title="Bottom navigation">

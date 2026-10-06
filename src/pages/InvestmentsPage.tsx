@@ -4,6 +4,7 @@ import InvestmentAccountSection from '../components/InvestmentAccountSection'
 import PageTitle from '../components/PageTitle'
 import { useData } from '../hooks/DataContext'
 import { formatMoney } from '../lib/format'
+import { latestValue } from '../lib/investments'
 
 export default function InvestmentsPage() {
   const { data, addInvestmentAccount } = useData()
@@ -29,7 +30,7 @@ export default function InvestmentsPage() {
       const withdrawals = accTx.filter((t) => t.type === 'withdrawal').reduce((s, t) => s + t.amount, 0)
       const accInvested = deposits - withdrawals
       invested += accInvested
-      currentValue += acc.currentValue ?? accInvested
+      currentValue += latestValue(acc, data.investmentValues) ?? accInvested
       income += accTx.filter((t) => t.type === 'investment_income').reduce((s, t) => s + t.amount, 0)
       expenses += accTx.filter((t) => t.type === 'investment_expense').reduce((s, t) => s + t.amount, 0)
     }
@@ -37,7 +38,7 @@ export default function InvestmentsPage() {
     const gain = totalNet - invested
     const gainPct = invested !== 0 ? (gain / invested) * 100 : 0
     return { invested, expenses, totalNet, gain, gainPct }
-  }, [data.investmentAccounts, data.investmentTransactions])
+  }, [data.investmentAccounts, data.investmentTransactions, data.investmentValues])
 
   const gainTone = totals.gain >= 0 ? 'text-accent-green' : 'text-accent-red'
   const gainSign = totals.gain >= 0 ? '+' : ''
@@ -72,7 +73,8 @@ export default function InvestmentsPage() {
           </div>
           <p className="mt-3 text-xs text-muted">
             Deposits and withdrawals always show up on Cash Flow as money invested. Dividends and fees stay inside the portfolio
-            unless you tick "paid out to / paid from my bank" when logging them.
+            unless you tick "paid out to / paid from my bank" when logging them. Logging what a portfolio is worth never moves
+            money, so it changes the figures here and nothing on Cash Flow.
           </p>
         </Card>
       )}

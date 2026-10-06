@@ -9,6 +9,7 @@ import type {
   InvestmentAccount,
   InvestmentEntryType,
   InvestmentTransaction,
+  InvestmentValueEntry,
   Keyword,
   Loan,
   LoanEntryType,
@@ -83,7 +84,11 @@ interface DataContextValue {
   // investments
   addInvestmentAccount: (name: string) => InvestmentAccount
   removeInvestmentAccount: (id: string) => void
-  updateInvestmentAccountValue: (id: string, currentValue: number | undefined) => void
+  /** Turns this portfolio's value chart on or off. */
+  setInvestmentChartEnabled: (id: string, enabled: boolean) => void
+  /** Logs what a portfolio is worth on a date. Logging the same date again replaces that entry. */
+  addInvestmentValue: (input: { accountId: string; value: number; date?: string }) => void
+  removeInvestmentValue: (id: string) => void
   /**
    * paidOut marks a dividend that actually landed in the bank, or a fee actually paid from it. That
    * side is real Income/Expenses, so a matching Transaction is created and linked to this one.
@@ -137,6 +142,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           transactions: next.transactions ?? [],
           investmentAccounts: next.investmentAccounts ?? [],
           investmentTransactions: next.investmentTransactions ?? [],
+          investmentValues: next.investmentValues ?? [],
           loans: next.loans ?? [],
           loanTransactions: next.loanTransactions ?? [],
           settings: next.settings ?? {},
@@ -334,13 +340,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...d,
           investmentAccounts: d.investmentAccounts.filter((a) => a.id !== id),
           investmentTransactions: d.investmentTransactions.filter((t) => t.accountId !== id),
+          investmentValues: d.investmentValues.filter((v) => v.accountId !== id),
         }))
       },
-      updateInvestmentAccountValue: (id, currentValue) => {
+      setInvestmentChartEnabled: (id, enabled) => {
         setData((d) => ({
           ...d,
-          investmentAccounts: d.investmentAccounts.map((a) => (a.id === id ? { ...a, currentValue } : a)),
+          investmentAccounts: d.investmentAccounts.map((a) => (a.id === id ? { ...a, chartEnabled: enabled } : a)),
         }))
+      },
+      addInvestmentValue: ({ accountId, value, date }) => {
+        const when = date ?? todayStr()
+        const entry: InvestmentValueEntry = { id: newId(), accountId, date: when, value, createdAt: Date.now() }
+        setData((d) => ({
+          ...d,
+          // One snapshot per date: re-logging a date corrects it rather than stacking a second point.
+          investmentValues: [...d.investmentValues.filter((v) => !(v.accountId === accountId && v.date === when)), entry],
+        }))
+      },
+      removeInvestmentValue: (id) => {
+        setData((d) => ({ ...d, investmentValues: d.investmentValues.filter((v) => v.id !== id) }))
       },
       addInvestmentTransaction: (input) => {
         const when = input.date ?? todayStr()
