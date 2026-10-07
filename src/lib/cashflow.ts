@@ -122,19 +122,6 @@ export function summarize(data: AppData, start: string, end: string): CashFlowSu
   }
 }
 
-/**
- * Actual expense totals for one period, split by bucket. The Expenses page shows these next to its
- * own include/exclude-aware total, which is the one figure summarize() can't express.
- */
-export function expenseBucketTotals(data: AppData, start: string, end: string): Record<SpendBucket, number> {
-  const rows = data.transactions.filter((t) => t.type === 'expense' && isActual(t) && t.date >= start && t.date <= end)
-  return {
-    expense: sum(rows.filter((t) => bucketFor(t, data.accounts) === 'expense')),
-    card: sum(rows.filter((t) => bucketFor(t, data.accounts) === 'card')),
-    invest: sum(rows.filter((t) => bucketFor(t, data.accounts) === 'invest')),
-  }
-}
-
 /** Per-day totals of what actually counts as spending — for the Dashboard calendar and spend limits. */
 export function spendingByDay(data: AppData, filter: (tx: Transaction) => boolean = () => true): Record<string, number> {
   const map: Record<string, number> = {}

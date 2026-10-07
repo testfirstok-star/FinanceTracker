@@ -12,7 +12,7 @@ import { usePeriod } from '../hooks/usePeriod'
 import { useData } from '../hooks/DataContext'
 import { formatMoney } from '../lib/format'
 import { hasTag } from '../lib/tags'
-import { expenseBucketTotals, isActual } from '../lib/cashflow'
+import { isActual, summarize } from '../lib/cashflow'
 
 const UNASSIGNED_KEY = '__unassigned__'
 
@@ -62,7 +62,7 @@ export default function ExpensesPage() {
     return Array.from(set).sort()
   }, [accounts])
 
-  const { total, cardBillsPaid, cardTracked, investedTotal, breakdown } = useMemo(() => {
+  const { total, cardBillsPaid, cardTracked, invested, investedViaAccounts, investedOnPortfolios, breakdown } = useMemo(() => {
     // Planned (future-dated, unconfirmed) entries are excluded everywhere — they aren't money yet.
     const inRange = data.transactions.filter(
       (t) => t.type === 'expense' && isActual(t) && t.date >= period.start && t.date <= period.end,
@@ -74,7 +74,11 @@ export default function ExpensesPage() {
     const cardBillsPaid = cardBillCategoryId
       ? included.filter((t) => t.categoryId === cardBillCategoryId).reduce((s, t) => s + t.amount, 0)
       : 0
-    const buckets = expenseBucketTotals(data, period.start, period.end)
+    // Same figures Cash Flow reports, from the same place. Invested in particular has to include
+    // deposits logged on the Investments page: money reaching a portfolio that way is just as
+    // invested as money logged against an Invest account here, and showing only one slice made the
+    // two pages disagree.
+    const s = summarize(data, period.start, period.end)
 
     const breakdownMap = new Map<string, number>()
     for (const t of included) {
@@ -89,7 +93,15 @@ export default function ExpensesPage() {
       }))
       .sort((a, b) => b.amount - a.amount)
 
-    return { total, cardBillsPaid, cardTracked: buckets.card, investedTotal: buckets.invest, breakdown }
+    return {
+      total,
+      cardBillsPaid,
+      cardTracked: s.cardTracked,
+      invested: s.invested,
+      investedViaAccounts: s.investedViaAccounts,
+      investedOnPortfolios: s.deposits - s.withdrawals,
+      breakdown,
+    }
   }, [data, accounts, isIncluded, period.start, period.end])
 
   return (
@@ -107,8 +119,16 @@ export default function ExpensesPage() {
             sublabel={cardBillsPaid > 0 ? `incl. ${formatMoney(cardBillsPaid)} card bills` : undefined}
           />
           <StatTile label="Card purchases" value={formatMoney(cardTracked)} sublabel="tracked only" />
-          <StatTile label="Invested" value={formatMoney(investedTotal)} sublabel="via accounts, not spent" />
+          <StatTile label="Invested" value={formatMoney(invested)} sublabel="moved, not spent" />
         </div>
+
+        {investedOnPortfolios !== 0 && (
+          <p className="mt-2 text-xs text-muted">
+            Invested is {formatMoney(investedViaAccounts)} logged against Invest accounts plus{' '}
+            {formatMoney(investedOnPortfolios)} of deposits less withdrawals on the Investments page. It matches the figure on
+            Cash Flow.
+          </p>
+        )}
 
         {accounts.length > 0 && (
           <div className="mt-4">
