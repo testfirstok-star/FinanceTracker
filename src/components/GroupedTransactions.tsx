@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../hooks/DataContext'
-import type { EntryType, Transaction } from '../types'
+import type { EntryType, InvestmentTransaction, Transaction } from '../types'
 import { formatMoney } from '../lib/format'
 import { isActual, isPlanned } from '../lib/cashflow'
 import Collapsible from './Collapsible'
@@ -35,6 +35,18 @@ export default function GroupedTransactions({
     [data.transactions, type, start, end],
   )
 
+  // Money moved on the Investments page belongs to the linked Invest account, so it is listed
+  // there too. These stay owned by the Investments page — they are shown here, not copied here, so
+  // there is only ever one record of the transfer and nothing can be counted twice.
+  const transfers = useMemo(() => {
+    const linkedId = data.settings.investmentTransferAccountId
+    if (type !== 'expense' || !linkedId) return { accountId: undefined, rows: [] as InvestmentTransaction[] }
+    const rows = data.investmentTransactions
+      .filter((t) => (t.type === 'deposit' || t.type === 'withdrawal') && t.date >= start && t.date <= end)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
+    return { accountId: linkedId, rows }
+  }, [data.settings.investmentTransferAccountId, data.investmentTransactions, type, start, end])
+
   const groups = useMemo(() => {
     const map = new Map<string, { label: string; transactions: Transaction[] }>()
     // Seed every active account so it has its own loggable section even before it has any transactions.
@@ -56,15 +68,20 @@ export default function GroupedTransactions({
       else map.set(key, { label, transactions: [t] })
     }
     return Array.from(map.entries())
-      .map(([key, g]) => ({
-        key,
-        label: g.label,
-        transactions: g.transactions.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt),
-        // Planned entries are listed but never added up — they aren't money yet.
-        total: g.transactions.filter(isActual).reduce((s, t) => s + t.amount, 0),
-      }))
+      .map(([key, g]) => {
+        const groupTransfers = key === transfers.accountId ? transfers.rows : []
+        const transferNet = groupTransfers.reduce((s, t) => s + (t.type === 'deposit' ? t.amount : -t.amount), 0)
+        return {
+          key,
+          label: g.label,
+          transactions: g.transactions.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt),
+          transfers: groupTransfers,
+          // Planned entries are listed but never added up — they aren't money yet.
+          total: g.transactions.filter(isActual).reduce((s, t) => s + t.amount, 0) + transferNet,
+        }
+      })
       .sort((a, b) => (a.key === UNASSIGNED_KEY ? 1 : b.key === UNASSIGNED_KEY ? -1 : b.total - a.total))
-  }, [inRange, groupBy, accounts, data.accounts, data.categories])
+  }, [inRange, groupBy, accounts, data.accounts, data.categories, transfers])
 
   function startEdit(t: Transaction) {
     setEditingId(t.id)
@@ -107,13 +124,36 @@ export default function GroupedTransactions({
           title={
             <span className="flex items-center gap-2 normal-case">
               {g.label}
-              <span className="text-muted">· {g.transactions.length}</span>
+              <span className="text-muted">· {g.transactions.length + g.transfers.length}</span>
             </span>
           }
           right={<span className="font-figure text-sm font-medium text-text">{formatMoney(g.total)}</span>}
         >
           <div className="space-y-1.5">
-            {g.transactions.length === 0 && <p className="text-xs text-muted">No entries in this period yet.</p>}
+            {g.transactions.length === 0 && g.transfers.length === 0 && (
+              <p className="text-xs text-muted">No entries in this period yet.</p>
+            )}
+            {g.transfers.map((t) => (
+              <div
+                key={t.id}
+                className="flex items-center justify-between gap-2 rounded-md border border-line border-dashed px-3 py-2"
+                title="Logged on the Investments page — edit or delete it there"
+              >
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs text-text">
+                    {t.description || (t.type === 'deposit' ? 'Deposit' : 'Withdrawal')}
+                    <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] text-gold">Investments page</span>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted">
+                    <span className="rounded-full bg-panel-hover px-2 py-0.5">{t.category || 'Transfer'}</span>
+                    <span>{t.date}</span>
+                  </div>
+                </div>
+                <span className={`font-figure text-sm font-medium ${t.type === 'withdrawal' ? 'text-accent-green' : ''}`}>
+                  {t.type === 'withdrawal' ? `-${formatMoney(t.amount)}` : formatMoney(t.amount)}
+                </span>
+              </div>
+            ))}
             {g.transactions.map((t) =>
               editingId === t.id ? (
                 <div key={t.id} className="grid grid-cols-1 gap-2 rounded-md border border-gold/40 p-3 sm:grid-cols-2">

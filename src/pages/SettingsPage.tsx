@@ -55,6 +55,34 @@ export default function SettingsPage() {
             </select>
           </label>
           <label className="block">
+            <span className="section-label mb-1 block">Account for investment transfers</span>
+            {accounts.some((a) => a.kind === 'invest') ? (
+              <select
+                value={data.settings.investmentTransferAccountId ?? ''}
+                onChange={(e) => updateSettings({ investmentTransferAccountId: e.target.value || undefined })}
+                className="w-full rounded-md border border-line bg-panel-hover px-3 py-1.5 text-sm"
+              >
+                <option value="">Not linked</option>
+                {accounts
+                  .filter((a) => a.kind === 'invest')
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+              </select>
+            ) : (
+              <p className="text-xs text-muted">
+                No Invest account yet. Set an account's kind to Invest under Manage accounts on the Expenses page, then pick it
+                here.
+              </p>
+            )}
+            <span className="mt-1 block text-[10px] text-muted">
+              Deposits and withdrawals you log on the Investments page show up under this account on the Expenses page. They stay
+              recorded once, so nothing is counted twice.
+            </span>
+          </label>
+          <label className="block">
             <span className="section-label mb-1 block">Default account for recurring expenses</span>
             <select
               value={data.settings.defaultRecurringAccountId ?? ''}

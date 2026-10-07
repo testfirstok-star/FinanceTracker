@@ -182,6 +182,12 @@ export interface AppSettings {
   defaultExpenseAccountId?: string
   /** Where a confirmed recurring expense posts when the item doesn't name its own account. */
   defaultRecurringAccountId?: string
+  /**
+   * The Invest-kind account that money moved on the Investments page belongs to. Deposits and
+   * withdrawals stay recorded once, on the Investments page; this only says where to show them on
+   * the Expenses page, so transfers are visible next to the account they relate to.
+   */
+  investmentTransferAccountId?: string
 }
 
 export interface AppData {
